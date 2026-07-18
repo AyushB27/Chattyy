@@ -1,6 +1,7 @@
 const jwt = require("jsonwebtoken");
 
-const JWT_SECRET = "supersecretkey"; 
+// Pull from .env, fallback to string if not found
+const JWT_SECRET = process.env.JWT_SECRET || "supersecretkey"; 
 
 const authMiddleware = (req, res, next) => {
   const authHeader = req.headers.authorization;
@@ -13,7 +14,7 @@ const authMiddleware = (req, res, next) => {
 
   try {
     const decoded = jwt.verify(token, JWT_SECRET);
-    req.user = decoded; // attach user data
+    req.user = decoded; 
     next();
   } catch (err) {
     return res.status(401).json({ message: "Invalid token" });

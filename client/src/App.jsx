@@ -8,8 +8,6 @@ function App() {
   return (
     <BrowserRouter>
       <Routes>
-
-        {/* AUTH */}
         <Route
           path="/"
           element={
@@ -27,8 +25,6 @@ function App() {
       }
     />
 
-
-        {/* CHAT */}
         <Route
           path="/chat"
           element={

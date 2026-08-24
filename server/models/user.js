@@ -5,27 +5,52 @@ const userSchema = new mongoose.Schema({
     type: String,
     required: true,
     unique: true,
+    lowercase: true,
+    trim: true,
   },
   username: {
     type: String,
     required: true,
-    unique: true,
+    trim: true,
   },
   password: {
     type: String,
     required: true,
   },
+  avatar: {
+    type: String,
+    default: '',
+  },
+  status: {
+    type: String,
+    enum: ['online', 'idle', 'dnd', 'offline'],
+    default: 'online',
+  },
+  customStatus: {
+    type: String,
+    default: '',
+    maxlength: 100,
+  },
+  bio: {
+    type: String,
+    default: '',
+    maxlength: 200,
+  },
   friends: [{
     type: mongoose.Schema.Types.ObjectId,
     ref: 'User',
-    default: [] // Ensures it initializes as an array
+    default: []
   }],
-  // 🔹 ADD THIS FIELD
   requests: [{
     type: mongoose.Schema.Types.ObjectId,
     ref: 'User',
-    default: [] // Ensures it initializes as an array
+    default: []
+  }],
+  sentRequests: [{
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'User',
+    default: []
   }]
-}, { timestamps: true }); 
+}, { timestamps: true });
 
 module.exports = mongoose.model('User', userSchema);

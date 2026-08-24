@@ -1,163 +1,247 @@
-import { useState } from "react";
+import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import axios from "axios";
+import { useAuth } from "../context/AuthContext";
+import { useTheme } from "../context/ThemeContext";
+import { MessageSquare, Palette } from "lucide-react";
 
-export default function AuthPage() {
+export default function AuthScreen() {
   const [isLogin, setIsLogin] = useState(true);
   const [email, setEmail] = useState("");
-  const [username, setUsername] = useState(""); // Added username state
+  const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
-  const [error, setError] = useState(""); // Added error state for UI feedback
-  
+  const [avatar, setAvatar] = useState("");
+  const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
+
+  const { login, register } = useAuth();
+  const { cycleTheme, theme } = useTheme();
   const navigate = useNavigate();
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setError(""); // Clear previous errors
+    setError("");
 
-    // 1. Password Confirmation Check
     if (!isLogin && password !== confirmPassword) {
       return setError("Passwords do not match!");
     }
 
-    const url = isLogin
-      ? "http://localhost:5000/api/auth/login"
-      : "http://localhost:5000/api/auth/register";
-
-    // 2. Payload adjusts based on login vs register
-    const payload = isLogin 
-      ? { email, password } 
-      : { email, username, password };
+    setLoading(true);
 
     try {
-      const res = await axios.post(url, payload);
-
-      if (isLogin && res.data.token) {
-        // 3. Save BOTH token and email to localStorage
-        localStorage.setItem("token", res.data.token);
-        localStorage.setItem("userEmail", email); 
+      if (isLogin) {
+        await login(email.trim(), password);
         navigate("/chat");
       } else {
-        // If registration is successful, switch to login screen
-        setIsLogin(true);
-        setPassword("");
-        setConfirmPassword("");
-        alert("Registration successful! Please log in.");
+        await register(
+          email.trim(),
+          username.trim(),
+          password,
+          avatar.trim()
+        );
+        navigate("/chat");
       }
     } catch (err) {
-      // Set the error message from the backend to display on the UI
-      setError(err.response?.data?.message || err.message);
+      setError(err.response?.data?.message || err.message || "Authentication failed");
+    } finally {
+      setLoading(false);
     }
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-[#313338] px-4">
+    <div
+      className="min-h-screen flex items-center justify-center px-4 select-none relative overflow-hidden"
+      style={{ backgroundColor: "var(--bg-rail)" }}
+    >
+      {/* Background Glow Circles */}
+      <div className="absolute -top-40 -left-40 w-96 h-96 bg-indigo-600/20 rounded-full blur-3xl pointer-events-none" />
+      <div className="absolute -bottom-40 -right-40 w-96 h-96 bg-purple-600/20 rounded-full blur-3xl pointer-events-none" />
+
+      {/* Theme Toggle in top-right */}
+      <button
+        onClick={cycleTheme}
+        className="absolute top-6 right-6 flex items-center gap-2 px-3 py-1.5 rounded-xl border text-xs font-semibold hover:bg-white/10 transition cursor-pointer"
+        style={{
+          borderColor: "var(--border-subtle)",
+          color: "var(--text-secondary)",
+        }}
+      >
+        <Palette size={14} className="text-indigo-400" />
+        <span className="capitalize">{theme}</span>
+      </button>
+
       {/* Card */}
-      <div className="w-full max-w-md bg-[#2b2d31] rounded-lg shadow-lg p-6">
-        
-        {/* Header */}
-        <h1 className="text-2xl font-semibold text-white text-center">
-          {isLogin ? "Welcome back!" : "Create an account"}
-        </h1>
+      <div
+        className="w-full max-w-md rounded-3xl shadow-2xl p-8 border relative z-10 animate-in fade-in duration-200"
+        style={{
+          backgroundColor: "var(--bg-popover)",
+          borderColor: "var(--border-subtle)",
+        }}
+      >
+        {/* Logo & Header */}
+        <div className="text-center mb-6">
+          <div className="mx-auto w-14 h-14 bg-indigo-600 rounded-2xl flex items-center justify-center text-white shadow-xl shadow-indigo-500/30 mb-3">
+            <MessageSquare size={32} />
+          </div>
+          <h1
+            className="text-2xl font-black tracking-tight"
+            style={{ color: "var(--text-primary)" }}
+          >
+            {isLogin ? "Welcome back to Chatty" : "Create your Chatty Account"}
+          </h1>
+          <p className="text-xs mt-1 font-medium" style={{ color: "var(--text-muted)" }}>
+            {isLogin
+              ? "We're so excited to see you again!"
+              : "Hang out with friends, join servers, and chat in real-time."}
+          </p>
+        </div>
 
-        <p className="text-gray-400 text-sm text-center mt-1">
-          {isLogin
-            ? "We’re excited to see you again."
-            : "Join and start chatting instantly."}
-        </p>
-
-        {/* Error Message Display */}
+        {/* Error Alert */}
         {error && (
-          <div className="mt-4 bg-red-500/10 border border-red-500 text-red-500 text-sm p-2 rounded text-center">
+          <div className="mb-4 bg-rose-500/10 border border-rose-500/50 text-rose-400 text-xs p-3 rounded-xl text-center font-semibold">
             {error}
           </div>
         )}
 
         {/* Form */}
-        <form onSubmit={handleSubmit} className="mt-6 space-y-4">
-          
+        <form onSubmit={handleSubmit} className="space-y-4">
           <div>
-            <label className="block text-xs font-semibold text-gray-400 mb-1">
-              EMAIL
+            <label
+              className="block text-[11px] font-black uppercase tracking-wider mb-1.5"
+              style={{ color: "var(--text-secondary)" }}
+            >
+              EMAIL ADDRESS <span className="text-rose-500">*</span>
             </label>
             <input
               type="email"
               required
-              className="w-full px-3 py-2 rounded bg-[#1e1f22] text-gray-200 focus:outline-none focus:ring-2 focus:ring-indigo-500"
-              placeholder="you@example.com"
+              placeholder="name@example.com"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
+              className="w-full px-4 py-2.5 rounded-xl outline-none text-sm border focus:ring-2 focus:ring-indigo-500 transition font-medium"
+              style={{
+                backgroundColor: "var(--bg-input)",
+                borderColor: "var(--border-subtle)",
+                color: "var(--text-primary)",
+              }}
             />
           </div>
 
           {!isLogin && (
             <div>
-              <label className="block text-xs font-semibold text-gray-400 mb-1">
-                USERNAME
+              <label
+                className="block text-[11px] font-black uppercase tracking-wider mb-1.5"
+                style={{ color: "var(--text-secondary)" }}
+              >
+                USERNAME <span className="text-rose-500">*</span>
               </label>
               <input
                 type="text"
                 required
-                className="w-full px-3 py-2 rounded bg-[#1e1f22] text-gray-200 focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                placeholder="AwesomeUser123"
+                placeholder="AwesomeUser"
                 value={username}
                 onChange={(e) => setUsername(e.target.value)}
+                className="w-full px-4 py-2.5 rounded-xl outline-none text-sm border focus:ring-2 focus:ring-indigo-500 transition font-medium"
+                style={{
+                  backgroundColor: "var(--bg-input)",
+                  borderColor: "var(--border-subtle)",
+                  color: "var(--text-primary)",
+                }}
+              />
+            </div>
+          )}
+
+          {!isLogin && (
+            <div>
+              <label
+                className="block text-[11px] font-black uppercase tracking-wider mb-1.5"
+                style={{ color: "var(--text-secondary)" }}
+              >
+                AVATAR IMAGE URL (OPTIONAL)
+              </label>
+              <input
+                type="url"
+                placeholder="https://images.unsplash.com/..."
+                value={avatar}
+                onChange={(e) => setAvatar(e.target.value)}
+                className="w-full px-4 py-2.5 rounded-xl outline-none text-sm border focus:ring-2 focus:ring-indigo-500 transition font-medium"
+                style={{
+                  backgroundColor: "var(--bg-input)",
+                  borderColor: "var(--border-subtle)",
+                  color: "var(--text-primary)",
+                }}
               />
             </div>
           )}
 
           <div>
-            <label className="block text-xs font-semibold text-gray-400 mb-1">
-              PASSWORD
+            <label
+              className="block text-[11px] font-black uppercase tracking-wider mb-1.5"
+              style={{ color: "var(--text-secondary)" }}
+            >
+              PASSWORD <span className="text-rose-500">*</span>
             </label>
             <input
               type="password"
               required
-              className="w-full px-3 py-2 rounded bg-[#1e1f22] text-gray-200 focus:outline-none focus:ring-2 focus:ring-indigo-500"
               placeholder="••••••••"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
+              className="w-full px-4 py-2.5 rounded-xl outline-none text-sm border focus:ring-2 focus:ring-indigo-500 transition font-medium"
+              style={{
+                backgroundColor: "var(--bg-input)",
+                borderColor: "var(--border-subtle)",
+                color: "var(--text-primary)",
+              }}
             />
           </div>
 
           {!isLogin && (
             <div>
-              <label className="block text-xs font-semibold text-gray-400 mb-1">
-                CONFIRM PASSWORD
+              <label
+                className="block text-[11px] font-black uppercase tracking-wider mb-1.5"
+                style={{ color: "var(--text-secondary)" }}
+              >
+                CONFIRM PASSWORD <span className="text-rose-500">*</span>
               </label>
               <input
                 type="password"
                 required
+                placeholder="••••••••"
                 value={confirmPassword}
                 onChange={(e) => setConfirmPassword(e.target.value)}
-                className="w-full px-3 py-2 rounded bg-[#1e1f22] text-gray-200 focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                placeholder="••••••••"
+                className="w-full px-4 py-2.5 rounded-xl outline-none text-sm border focus:ring-2 focus:ring-indigo-500 transition font-medium"
+                style={{
+                  backgroundColor: "var(--bg-input)",
+                  borderColor: "var(--border-subtle)",
+                  color: "var(--text-primary)",
+                }}
               />
             </div>
           )}
 
           <button
             type="submit"
-            className="w-full bg-indigo-500 hover:bg-indigo-600 text-white py-2 rounded font-medium transition"
+            disabled={loading}
+            className="w-full py-3 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-bold text-sm transition disabled:opacity-50 cursor-pointer shadow-lg shadow-indigo-500/25 mt-2"
           >
-            {isLogin ? "Log In" : "Sign Up"}
+            {loading ? "Please wait..." : isLogin ? "Log In" : "Sign Up"}
           </button>
         </form>
 
-        {/* Switch */}
-        <p className="text-sm text-gray-400 text-center mt-4">
+        {/* Toggle */}
+        <div className="mt-5 text-xs text-center" style={{ color: "var(--text-muted)" }}>
           {isLogin ? "Need an account?" : "Already have an account?"}
           <button
             onClick={() => {
               setIsLogin(!isLogin);
-              setError(""); // Clear errors on toggle
+              setError("");
             }}
-            className="ml-1 text-indigo-400 hover:underline"
+            className="ml-1.5 text-indigo-400 hover:underline font-bold cursor-pointer"
           >
-            {isLogin ? "Register" : "Login"}
+            {isLogin ? "Register" : "Log In"}
           </button>
-        </p>
+        </div>
       </div>
     </div>
   );

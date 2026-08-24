@@ -1,283 +1,507 @@
-import React, { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
-import axios from "axios";
-import socket from "../components/socket"; // Adjust path if needed
+import React, { useEffect, useState, useCallback } from "react";
+import { useAuth } from "../context/AuthContext";
+import { useSocket } from "../context/SocketContext";
+import api from "../services/api";
+
+// Layout components
+import ServerRail from "../components/layout/ServerRail";
+import Sidebar from "../components/layout/Sidebar";
+import ChatArea from "../components/chat/ChatArea";
+import MemberList from "../components/chat/MemberList";
+import FriendsView from "../components/chat/FriendsView";
+
+// Modals
+import CreateServerModal from "../components/modals/CreateServerModal";
+import JoinServerModal from "../components/modals/JoinServerModal";
+import CreateChannelModal from "../components/modals/CreateChannelModal";
+import InviteModal from "../components/modals/InviteModal";
+import UserSettingsModal from "../components/modals/UserSettingsModal";
+import UserPopoutCard from "../components/modals/UserPopoutCard";
 
 export default function ChatScreen() {
-  const navigate = useNavigate();
+  const { user } = useAuth();
+  const { socket } = useSocket();
 
+  // Navigation & Active View State
+  const [servers, setServers] = useState([]);
+  const [activeServer, setActiveServer] = useState(null);
+  const [activeChannel, setActiveChannel] = useState(null);
+  const [isDMsActive, setIsDMsActive] = useState(true);
+  const [isFriendsTabActive, setIsFriendsTabActive] = useState(true);
+  const [activeFriend, setActiveFriend] = useState(null);
+
+  // Data State
   const [friends, setFriends] = useState([]);
+  const [conversations, setConversations] = useState([]);
   const [requests, setRequests] = useState([]);
-  const [friendEmail, setFriendEmail] = useState("");
-  const [showAddFriend, setShowAddFriend] = useState(false);
-
-  const [selectedFriend, setSelectedFriend] = useState(null); // Now stores a friend OBJECT
-  const [message, setMessage] = useState("");
+  const [sentRequests, setSentRequests] = useState([]);
   const [messages, setMessages] = useState([]);
+  const [isMemberListOpen, setIsMemberListOpen] = useState(true);
 
-  const token = localStorage.getItem("token");
-  // Grabbing the email directly from localStorage as we set it in AuthScreen
-  const email = localStorage.getItem("userEmail"); 
+  // Modal State
+  const [createServerOpen, setCreateServerOpen] = useState(false);
+  const [joinServerOpen, setJoinServerOpen] = useState(false);
+  const [createChannelOpen, setCreateChannelOpen] = useState(false);
+  const [inviteModalOpen, setInviteModalOpen] = useState(false);
+  const [settingsOpen, setSettingsOpen] = useState(false);
+  const [popoutUser, setPopoutUser] = useState(null);
 
-  // ===================== FETCH FRIENDS =====================
-  const fetchFriends = async () => {
+  /* ================= FETCH INITIAL DATA ================= */
+  const fetchServers = useCallback(async () => {
     try {
-      const res = await axios.get(
-        "http://localhost:5000/api/friends/list",
-        {
-          headers: { Authorization: `Bearer ${token}` },
-        }
-      );
-      // The backend now sends arrays of objects: [{ _id, username, email }]
+      const res = await api.get("/api/servers");
+      setServers(res.data || []);
+    } catch (err) {
+      console.error("Error fetching servers:", err);
+    }
+  }, []);
+
+  const fetchFriends = useCallback(async () => {
+    try {
+      const res = await api.get("/api/friends/list");
       setFriends(res.data.friends || []);
       setRequests(res.data.requests || []);
+      setSentRequests(res.data.sentRequests || []);
     } catch (err) {
-      console.error(err.response?.data);
+      console.error("Error fetching friends:", err);
     }
-  };
+  }, []);
+
+  const fetchConversations = useCallback(async () => {
+    try {
+      const res = await api.get("/api/messages/conversations");
+      setConversations(res.data || []);
+    } catch (err) {
+      console.error("Error fetching conversations:", err);
+    }
+  }, []);
 
   useEffect(() => {
-    if (!token) {
-      navigate("/"); // Kick out unauthenticated users
-      return;
-    }
+    fetchServers();
     fetchFriends();
-  }, [token, navigate]);
+    fetchConversations();
+  }, [fetchServers, fetchFriends, fetchConversations]);
 
-  // ===================== FETCH CHAT HISTORY =====================
-  // This is the missing piece for Phase 4!
+  /* ================= FETCH MESSAGES ================= */
   useEffect(() => {
-    if (!selectedFriend) return;
+    if (isDMsActive) {
+      if (activeFriend) {
+        const fetchDMMessages = async () => {
+          try {
+            const res = await api
+              .get(`/api/messages/dm/${activeFriend._id}`)
+              .catch(() => api.get(`/api/messages/${activeFriend.email}`));
+            setMessages(res.data || []);
+          } catch (err) {
+            console.error("Error fetching DM messages:", err);
+          }
+        };
+        fetchDMMessages();
+      } else {
+        setMessages([]);
+      }
+    } else if (activeChannel && activeChannel.type !== "voice") {
+      const fetchChannelMessages = async () => {
+        try {
+          const res = await api.get(`/api/messages/channel/${activeChannel._id}`);
+          setMessages(res.data || []);
+        } catch (err) {
+          console.error("Error fetching channel messages:", err);
+        }
+      };
+      fetchChannelMessages();
+    }
+  }, [isDMsActive, activeFriend, activeChannel]);
 
-    const fetchChatHistory = async () => {
-      try {
-        const res = await axios.get(
-          `http://localhost:5000/api/messages/${selectedFriend.email}`,
-          { headers: { Authorization: `Bearer ${token}` } }
-        );
-        setMessages(res.data); // Load the historical messages from MongoDB
-      } catch (error) {
-        console.error("Error fetching chat history", error);
+  /* ================= REAL-TIME SOCKET LISTENERS ================= */
+  useEffect(() => {
+    if (!socket) return;
+
+    if (activeChannel && !isDMsActive) {
+      socket.emit("join-channel", activeChannel._id);
+    }
+
+    const onReceiveChannelMessage = (msg) => {
+      if (activeChannel && msg.channelId === activeChannel._id) {
+        setMessages((prev) => {
+          if (prev.some((m) => m._id && m._id === msg._id)) return prev;
+          return [...prev, msg];
+        });
       }
     };
 
-    fetchChatHistory();
-  }, [selectedFriend, token]);
+    const onReceiveDirectMessage = (msg) => {
+      // Refresh conversations list in background
+      fetchConversations();
 
-  // ===================== SOCKET SETUP =====================
-  useEffect(() => {
-    if (!email) return;
+      const senderId = msg.senderId?._id || msg.senderId;
+      const receiverId = msg.receiverId?._id || msg.receiverId;
 
-    socket.connect();
-    socket.emit("join", email);
+      if (
+        isDMsActive &&
+        activeFriend &&
+        (senderId?.toString() === activeFriend._id?.toString() ||
+          receiverId?.toString() === activeFriend._id?.toString())
+      ) {
+        setMessages((prev) => {
+          if (prev.some((m) => m._id && m._id === msg._id)) return prev;
+          return [...prev, msg];
+        });
+      }
+    };
 
-    socket.on("receive-message", (msg) => {
-      setMessages((prev) => [...prev, msg]);
-    });
+    const onMessageUpdated = ({ messageId, text, isEdited }) => {
+      setMessages((prev) =>
+        prev.map((m) =>
+          m._id === messageId
+            ? { ...m, messageContent: text, text, isEdited: isEdited ?? true }
+            : m
+        )
+      );
+    };
+
+    const onMessageDeleted = ({ messageId }) => {
+      setMessages((prev) => prev.filter((m) => m._id !== messageId));
+    };
+
+    const onReactionUpdated = (updatedMsg) => {
+      setMessages((prev) =>
+        prev.map((m) => (m._id === updatedMsg._id ? updatedMsg : m))
+      );
+    };
+
+    socket.on("receive-channel-message", onReceiveChannelMessage);
+    socket.on("receive-direct-message", onReceiveDirectMessage);
+    socket.on("message:updated", onMessageUpdated);
+    socket.on("message:deleted", onMessageDeleted);
+    socket.on("message:reaction_updated", onReactionUpdated);
 
     return () => {
-      socket.off("receive-message");
-      socket.disconnect();
+      if (activeChannel && !isDMsActive) {
+        socket.emit("leave-channel", activeChannel._id);
+      }
+      socket.off("receive-channel-message", onReceiveChannelMessage);
+      socket.off("receive-direct-message", onReceiveDirectMessage);
+      socket.off("message:updated", onMessageUpdated);
+      socket.off("message:deleted", onMessageDeleted);
+      socket.off("message:reaction_updated", onReactionUpdated);
     };
-  }, [email]);
+  }, [socket, activeChannel, activeFriend, isDMsActive, fetchConversations]);
 
-  // ===================== FRIEND ACTIONS =====================
-const sendFriendRequest = async () => {
-    if (!friendEmail) return;
+  /* ================= ACTIONS ================= */
+  const handleSelectServer = (server) => {
+    setIsDMsActive(false);
+    setActiveServer(server);
+    setActiveFriend(null);
 
-    try {
-      await axios.post(
-        "http://localhost:5000/api/friends/add",
-        { to: friendEmail },
-        { headers: { Authorization: `Bearer ${token}` } }
-      );
-      
-      alert("Friend request sent");
-      setFriendEmail("");
-      setShowAddFriend(false);
-      
-      fetchFriends(); 
-      
-    } catch (err) {
-      alert(err.response?.data?.message || "Error");
-    }
+    const firstTextChannel =
+      server.channels?.find((c) => c.type !== "voice") || server.channels?.[0];
+    setActiveChannel(firstTextChannel || null);
   };
 
-const acceptRequest = async (fromEmail) => {
-    try {
-      await axios.post(
-        "http://localhost:5000/api/friends/accept",
-        { from: fromEmail },
-        { headers: { Authorization: `Bearer ${token}` } }
-      );
-      
-      fetchFriends(); 
-      
-    } catch (err) {
-      console.error(err.response?.data);
-    }
+  const handleSelectDMs = () => {
+    setIsDMsActive(true);
+    setActiveServer(null);
+    setActiveChannel(null);
+    setIsFriendsTabActive(true);
   };
 
-  // ===================== CHAT =====================
-  const sendMessage = () => {
-    if (!message || !selectedFriend) return;
+  const handleSelectFriend = (targetUser) => {
+    setIsDMsActive(true);
+    setIsFriendsTabActive(false);
+    setActiveFriend(targetUser);
 
-    socket.emit("send-message", {
-      from: email,
-      to: selectedFriend.email, // Use the selected friend's email
-      text: message,
+    // Add to conversations list immediately if not present
+    setConversations((prev) => {
+      if (prev.some((c) => c.user?._id === targetUser._id)) return prev;
+      return [{ user: targetUser, lastMessage: { text: "" } }, ...prev];
     });
-
-    setMessage("");
   };
 
-  // ===================== LOGOUT =====================
-  const handleLogout = () => {
-    localStorage.removeItem("token");
-    localStorage.removeItem("userEmail");
-    navigate("/", { replace: true });
+  const handleSendMessage = ({ text, replyTo, attachments }) => {
+    if (!text && (!attachments || attachments.length === 0)) return;
+
+    if (isDMsActive && activeFriend) {
+      socket.emit("send-direct-message", {
+        toUserId: activeFriend._id,
+        toEmail: activeFriend.email,
+        text,
+        replyTo,
+        attachments,
+        sender: user,
+      });
+
+      // Update conversations list preview
+      setConversations((prev) => {
+        const filtered = prev.filter((c) => c.user?._id !== activeFriend._id);
+        return [
+          { user: activeFriend, lastMessage: { text, timestamp: new Date() } },
+          ...filtered,
+        ];
+      });
+    } else if (activeChannel) {
+      socket.emit("send-channel-message", {
+        channelId: activeChannel._id,
+        text,
+        replyTo,
+        attachments,
+        sender: user,
+      });
+    }
   };
 
-  // ===================== FILTERED CHAT =====================
-  const chatMessages = messages.filter(
-    (m) =>
-      (m.from === email && m.to === selectedFriend?.email) ||
-      (m.from === selectedFriend?.email && m.to === email)
-  );
+  const handleEditMessage = async (messageId, newText) => {
+    try {
+      await api.patch(`/api/messages/${messageId}`, { text: newText });
+      socket.emit("message:edit", {
+        messageId,
+        channelId: activeChannel?._id,
+        toUserId: activeFriend?._id,
+        text: newText,
+      });
+    } catch (err) {
+      console.error("Error editing message:", err);
+    }
+  };
+
+  const handleDeleteMessage = async (messageId) => {
+    try {
+      await api.delete(`/api/messages/${messageId}`);
+      socket.emit("message:delete", {
+        messageId,
+        channelId: activeChannel?._id,
+        toUserId: activeFriend?._id,
+      });
+    } catch (err) {
+      console.error("Error deleting message:", err);
+    }
+  };
+
+  const handleReactMessage = async (messageId, emoji) => {
+    try {
+      const res = await api.post(`/api/messages/${messageId}/reaction`, { emoji });
+      socket.emit("message:react", {
+        messageDoc: res.data.messageDoc,
+        channelId: activeChannel?._id,
+        toUserId: activeFriend?._id,
+      });
+    } catch (err) {
+      console.error("Error reacting to message:", err);
+    }
+  };
+
+  /* Friend Actions */
+  const handleSendFriendRequest = async (email) => {
+    try {
+      const res = await api.post("/api/friends/add", { to: email });
+      fetchFriends();
+      return { success: true, message: res.data.message };
+    } catch (err) {
+      return {
+        success: false,
+        message: err.response?.data?.message || "Failed to send request",
+      };
+    }
+  };
+
+  const handleAcceptRequest = async (fromEmail) => {
+    try {
+      await api.post("/api/friends/accept", { from: fromEmail });
+      fetchFriends();
+      fetchConversations();
+    } catch (err) {
+      console.error("Error accepting request:", err);
+    }
+  };
+
+  const handleRejectRequest = async (fromEmail) => {
+    try {
+      await api.post("/api/friends/reject", { from: fromEmail });
+      fetchFriends();
+    } catch (err) {
+      console.error("Error rejecting request:", err);
+    }
+  };
+
+  const handleCancelRequest = async (toEmail) => {
+    try {
+      await api.post("/api/friends/cancel", { to: toEmail });
+      fetchFriends();
+    } catch (err) {
+      console.error("Error cancelling request:", err);
+    }
+  };
+
+  const handleRemoveFriend = async (friendEmail) => {
+    try {
+      await api.post("/api/friends/remove", { email: friendEmail });
+      if (activeFriend?.email === friendEmail) {
+        setActiveFriend(null);
+        setIsFriendsTabActive(true);
+      }
+      fetchFriends();
+    } catch (err) {
+      console.error("Error removing friend:", err);
+    }
+  };
+
+  const handleLeaveOrDeleteServer = async (server) => {
+    const isOwner = server.ownerId === user?._id;
+    const confirmMsg = isOwner
+      ? `Are you sure you want to delete ${server.name}? This cannot be undone.`
+      : `Are you sure you want to leave ${server.name}?`;
+
+    if (window.confirm(confirmMsg)) {
+      try {
+        await api.delete(`/api/servers/${server._id}`);
+        fetchServers();
+        handleSelectDMs();
+      } catch (err) {
+        console.error("Error leaving/deleting server:", err);
+      }
+    }
+  };
+
+  const isOwnerOrAdmin = activeServer?.ownerId === user?._id;
 
   return (
-    <div className="h-screen flex flex-col bg-[#313338] text-gray-300">
-      {/* ===== TOP BAR ===== */}
-      <div className="flex items-center gap-3 px-4 py-3 border-b border-[#1f2023] bg-[#2b2d31]">
-        <button
-          onClick={() => setShowAddFriend(!showAddFriend)}
-          className="px-3 py-1.5 text-sm rounded bg-indigo-500 text-white"
-        >
-          Add Friend
-        </button>
+    <div
+      className="h-screen w-screen flex overflow-hidden font-sans select-none"
+      style={{ backgroundColor: "var(--bg-rail)" }}
+    >
+      {/* 1. Left Server Rail */}
+      <ServerRail
+        servers={servers}
+        activeServer={activeServer}
+        onSelectServer={handleSelectServer}
+        onSelectDMs={handleSelectDMs}
+        isDMsActive={isDMsActive}
+        onOpenCreateServer={() => setCreateServerOpen(true)}
+        onOpenJoinServer={() => setJoinServerOpen(true)}
+        unreadCount={requests.length}
+      />
 
-        <button className="px-3 py-1.5 text-sm rounded bg-[#3f4147]">
-          Requests ({requests.length})
-        </button>
+      {/* 2. Sub-Sidebar (Channels or DMs) */}
+      <Sidebar
+        isDMsActive={isDMsActive}
+        activeServer={activeServer}
+        activeChannel={activeChannel}
+        onSelectChannel={(ch) => setActiveChannel(ch)}
+        friends={friends}
+        conversations={conversations}
+        requestsCount={requests.length}
+        activeFriend={activeFriend}
+        onSelectFriend={handleSelectFriend}
+        onSelectFriendsTab={() => {
+          setIsFriendsTabActive(true);
+          setActiveFriend(null);
+        }}
+        isFriendsTabActive={isFriendsTabActive}
+        onOpenCreateChannel={() => setCreateChannelOpen(true)}
+        onOpenInviteModal={() => setInviteModalOpen(true)}
+        onOpenSettings={() => setSettingsOpen(true)}
+        onLeaveOrDeleteServer={handleLeaveOrDeleteServer}
+      />
 
-        <button
-          onClick={handleLogout}
-          className="ml-auto px-3 py-1.5 text-sm rounded bg-red-500 text-white"
-        >
-          Logout
-        </button>
-      </div>
+      {/* 3. Main Content Area */}
+      {isDMsActive && isFriendsTabActive && !activeFriend ? (
+        <FriendsView
+          friends={friends}
+          requests={requests}
+          sentRequests={sentRequests}
+          onAcceptRequest={handleAcceptRequest}
+          onRejectRequest={handleRejectRequest}
+          onCancelRequest={handleCancelRequest}
+          onRemoveFriend={handleRemoveFriend}
+          onSendFriendRequest={handleSendFriendRequest}
+          onStartDM={handleSelectFriend}
+        />
+      ) : (
+        <div className="flex-1 flex overflow-hidden">
+          <ChatArea
+            isDM={isDMsActive}
+            channel={activeChannel}
+            friend={activeFriend}
+            messages={messages}
+            onSendMessage={handleSendMessage}
+            onEditMessage={handleEditMessage}
+            onDeleteMessage={handleDeleteMessage}
+            onReactMessage={handleReactMessage}
+            onUserClick={(clickedUser, role) =>
+              setPopoutUser({ user: clickedUser, role })
+            }
+            isMemberListOpen={isMemberListOpen}
+            onToggleMemberList={() => setIsMemberListOpen(!isMemberListOpen)}
+            canDelete={isOwnerOrAdmin}
+          />
 
-      {/* ===== ADD FRIEND ===== */}
-      {showAddFriend && (
-        <div className="px-4 py-3 bg-[#2b2d31] border-b border-[#1f2023]">
-          <div className="flex gap-2">
-            <input
-              type="email"
-              placeholder="Friend email"
-              value={friendEmail}
-              onChange={(e) => setFriendEmail(e.target.value)}
-              className="flex-1 px-3 py-2 rounded bg-[#1e1f22] outline-none"
+          {/* 4. Server Member List */}
+          {!isDMsActive && isMemberListOpen && activeServer && (
+            <MemberList
+              members={activeServer.members || []}
+              ownerId={activeServer.ownerId}
+              onMemberClick={(clickedUser, role) =>
+                setPopoutUser({ user: clickedUser, role })
+              }
             />
-            <button
-              onClick={sendFriendRequest}
-              className="px-3 py-2 bg-green-500 rounded"
-            >
-              Send
-            </button>
-          </div>
-        </div>
-      )}
-
-      {/* ===== REQUESTS ===== */}
-      {requests.length > 0 && (
-        <div className="px-4 py-3 bg-[#2b2d31] border-b border-[#1f2023]">
-          <h3 className="text-xs uppercase text-gray-400 mb-2">
-            Friend Requests
-          </h3>
-          {/* Updated mapping to handle objects */}
-          {requests.map((req) => (
-            <div key={req._id} className="flex justify-between items-center mb-2">
-              <span>{req.username} <span className="text-xs text-gray-500">({req.email})</span></span>
-              <button
-                onClick={() => acceptRequest(req.email)}
-                className="text-xs bg-green-500 px-2 py-1 rounded text-white"
-              >
-                Accept
-              </button>
-            </div>
-          ))}
-        </div>
-      )}
-
-      {/* ===== MAIN ===== */}
-      <div className="flex flex-1 overflow-hidden">
-        {/* FRIEND LIST */}
-        <div className="w-1/3 border-r border-[#1f2023] px-4 py-3 overflow-y-auto">
-          <h3 className="text-xs uppercase text-gray-400 mb-3">Friends</h3>
-          {/* Updated mapping to handle objects */}
-          {friends.map((friend) => (
-            <div
-              key={friend._id}
-              onClick={() => setSelectedFriend(friend)}
-              className={`px-3 py-2 rounded cursor-pointer mb-1 transition ${
-                selectedFriend?._id === friend._id
-                  ? "bg-indigo-500 text-white"
-                  : "hover:bg-[#3f4147]"
-              }`}
-            >
-              {friend.username}
-            </div>
-          ))}
-        </div>
-
-        {/* CHAT */}
-        <div className="flex flex-col flex-1 px-4 py-3 bg-[#313338]">
-          {selectedFriend ? (
-            <>
-              {/* Chat Header */}
-              <div className="border-b border-[#1f2023] pb-2 mb-3">
-                <h2 className="font-semibold text-white">@ {selectedFriend.username}</h2>
-              </div>
-              
-              <div className="flex-1 overflow-y-auto space-y-3 mb-3 pr-2">
-                {chatMessages.map((m, i) => (
-                  <div
-                    key={i}
-                    className={`max-w-xs px-3 py-2 rounded ${
-                      m.from === email
-                        ? "ml-auto bg-indigo-500 text-white rounded-br-none"
-                        : "mr-auto bg-[#2b2d31] text-gray-200 rounded-bl-none"
-                    }`}
-                  >
-                    {m.text}
-                  </div>
-                ))}
-              </div>
-
-              <div className="flex gap-2 mt-auto">
-                <input
-                  value={message}
-                  onChange={(e) => setMessage(e.target.value)}
-                  onKeyDown={(e) => e.key === "Enter" && sendMessage()}
-                  className="flex-1 px-4 py-2.5 rounded-lg bg-[#383a40] text-gray-200 outline-none focus:ring-1 focus:ring-indigo-500"
-                  placeholder={`Message @${selectedFriend.username}`}
-                />
-                <button
-                  onClick={sendMessage}
-                  className="px-5 py-2.5 bg-indigo-500 hover:bg-indigo-600 text-white rounded-lg transition"
-                >
-                  Send
-                </button>
-              </div>
-            </>
-          ) : (
-            <div className="flex items-center justify-center flex-1 text-gray-400">
-              Select a friend to start chatting
-            </div>
           )}
         </div>
-      </div>
+      )}
+
+      {/* ===== MODALS ===== */}
+      <CreateServerModal
+        isOpen={createServerOpen}
+        onClose={() => setCreateServerOpen(false)}
+        onServerCreated={(newServer) => {
+          fetchServers();
+          handleSelectServer(newServer);
+        }}
+      />
+
+      <JoinServerModal
+        isOpen={joinServerOpen}
+        onClose={() => setJoinServerOpen(false)}
+        onServerJoined={(joinedServer) => {
+          fetchServers();
+          handleSelectServer(joinedServer);
+        }}
+      />
+
+      <CreateChannelModal
+        isOpen={createChannelOpen}
+        onClose={() => setCreateChannelOpen(false)}
+        serverId={activeServer?._id}
+        onChannelCreated={async (newChannel) => {
+          await fetchServers();
+          setActiveServer((prev) => ({
+            ...prev,
+            channels: [...(prev.channels || []), newChannel],
+          }));
+          if (newChannel.type !== "voice") {
+            setActiveChannel(newChannel);
+          }
+        }}
+      />
+
+      <InviteModal
+        isOpen={inviteModalOpen}
+        onClose={() => setInviteModalOpen(false)}
+        server={activeServer}
+      />
+
+      <UserSettingsModal
+        isOpen={settingsOpen}
+        onClose={() => setSettingsOpen(false)}
+      />
+
+      <UserPopoutCard
+        user={popoutUser?.user}
+        role={popoutUser?.role}
+        onClose={() => setPopoutUser(null)}
+        onDirectMessage={(targetUser) => {
+          handleSelectFriend(targetUser);
+        }}
+      />
     </div>
   );
 }

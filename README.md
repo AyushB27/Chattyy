@@ -1,162 +1,199 @@
-# 💬 Chatttyy — Real-Time Chat Application
+# Chatty
 
-A full-stack, Discord-inspired real-time chat application built with the **MERN stack**. Chatty provides persistent authentication, real-time messaging, friend management, and database-backed chat history through a modern, responsive interface.
-
----
-
-## 🚀 Features
-
-### 🔐 Secure Authentication
-
-* User registration and login using **JWT authentication**
-* Password hashing with **bcrypt**
-* Protected routes for authenticated users
-* Secure environment variable management
-
-### 💬 Real-Time Messaging
-
-* Instant message delivery using **Socket.IO**
-* Persistent chat history stored in MongoDB
-* Real-time communication between connected users
-
-### 👥 Friend System
-
-* Send and receive friend requests
-* Accept or manage incoming requests
-* Database-backed friend relationships and status tracking
-
-### 💾 Persistent Data
-
-* MongoDB Atlas database integration
-* Persistent users, friendships, and chat messages
-* Data remains available even after server restarts
-
-### 🎨 Modern UI
-
-* Discord-inspired user interface
-* Responsive design with **Tailwind CSS**
-* Clean and intuitive chat experience
+Chatty is a full-stack, real-time messaging and community platform built using React, Node.js, Express, MongoDB, and Socket.IO. It combines server-based community channels, one-on-one direct messages, in-browser WebRTC voice channels, custom user presence, and a multi-theme design system.
 
 ---
 
-## 🛠️ Tech Stack
+## Core Capabilities
+
+### Community Servers and Channels
+- Create and manage custom servers with unique 8-character invite codes.
+- Join public or private servers using invite links or codes.
+- Organize servers into text channels (`#general`, `#dev`) and voice rooms with customizable categories.
+- Real-time channel message broadcast isolated to server/channel rooms.
+- Server member directory grouped by online and offline states, with role distinctions (owner and members).
+
+### Direct Messaging and Social Graph
+- Persistent direct message threads that support both friends and server co-members.
+- Friend management system: send, accept, decline, or cancel requests, plus unfriend capabilities.
+- Real-time online, idle, do-not-disturb, and invisible presence tracking.
+- Custom status messages and editable user profiles (avatars and bios).
+- Interactive user popout cards with quick direct messaging.
+
+### Real-Time Chat Experience
+- Live typing indicators ("user is typing...") with automatic debouncing.
+- Multi-category emoji picker with cursor-accurate text insertion.
+- Message reactions with real-time counters and user interaction states.
+- In-place message editing with an `(edited)` indicator and message deletion.
+- Quoted reply chains linking back to parent messages.
+- Markdown code block formatting and image URL preview attachments.
+- Automatic smooth scrolling to latest messages on incoming events.
+
+### WebRTC Voice Channels
+- In-browser voice communication using WebRTC mesh signaling over Socket.IO.
+- Active speaking indicators with visual audio rings.
+- Hardware toggle support for microphone mute and audio deafen.
+- Voice room status bar displaying connection state and one-click disconnect.
+
+### Multi-Theme Engine
+- Four distinct theme palettes:
+  - Cyber Dark (deep slate with luminous indigo accents)
+  - OLED Midnight (pitch black with emerald highlights)
+  - Sunset Velvet (royal purple with fuchsia accents)
+  - Clean Snow (light mode with crisp slate typography)
+- Instant theme switcher accessible from the header, sidebar, and settings modal with local storage persistence.
+
+---
+
+## Tech Stack
 
 ### Frontend
-
-* React
-* Tailwind CSS
-* Axios
-* Socket.IO Client
+- React 19
+- Vite
+- Tailwind CSS v4
+- Socket.IO Client
+- Axios
+- React Router v7
+- Lucide React (icons)
 
 ### Backend
-
-* Node.js
-* Express.js
-* Socket.IO
-
-### Database
-
-* MongoDB Atlas
-* Mongoose
-
-### Authentication & Security
-
-* JSON Web Tokens (JWT)
-* bcrypt
-* dotenv
+- Node.js
+- Express 5
+- Socket.IO 4
+- MongoDB and Mongoose 9
+- JSON Web Tokens (JWT)
+- bcrypt (password hashing)
 
 ---
 
-## ⚙️ Getting Started
+## Project Structure
 
-### 1. Prerequisites
-
-Make sure you have the following installed:
-
-* [Node.js](https://nodejs.org/)
-* A [MongoDB Atlas](https://www.mongodb.com/atlas) account
-* Git
-
----
-
-### 2. Clone the Repository
-
-```bash
-git clone https://github.com/your-username/chatty.git
-cd chatty
+```text
+Chattyyyyy/
+├── client/                 # React frontend (Vite)
+│   ├── src/
+│   │   ├── components/     # Layout, chat feed, modals, common UI
+│   │   ├── context/        # Auth, Socket, and Theme state providers
+│   │   ├── screens/        # AuthScreen and master ChatScreen
+│   │   ├── services/       # Centralized Axios API client
+│   │   ├── App.jsx         # App router and providers
+│   │   └── main.jsx        # Entry point
+│   ├── package.json
+│   └── vite.config.js
+├── server/                 # Node.js backend
+│   ├── middleware/         # JWT authentication middleware
+│   ├── models/             # User, Message, Server, and Channel Mongoose schemas
+│   ├── routes/             # Auth, friend, message, server, and channel API endpoints
+│   ├── server.js           # Express app, Socket.IO rooms, and WebRTC signaling
+│   └── package.json
+└── README.md
 ```
 
 ---
 
-### 3. Backend Setup
+## Getting Started
 
-Navigate to the server directory:
+### Prerequisites
+- Node.js (v18 or higher recommended)
+- npm or yarn
+- A running MongoDB instance (local MongoDB Community Server or a free MongoDB Atlas cluster)
+
+---
+
+### 1. Clone the Repository
+
+```bash
+git clone https://github.com/AyushB27/Chattyyyyy.git
+cd Chattyyyyy
+```
+
+---
+
+### 2. Configure the Backend
+
+Navigate to the `server` directory and install dependencies:
 
 ```bash
 cd server
 npm install
 ```
 
-Create a `.env` file inside the `server` directory:
+Create a `.env` file in the `server` directory:
 
 ```env
-MONGO_URI=your_mongodb_connection_string
-JWT_SECRET=your_secure_random_string
+PORT=5000
+MONGO_URI=mongodb://127.0.0.1:27017/chatty
+JWT_SECRET=your_super_secret_jwt_key_here
 ```
 
-Start the backend server:
+> If you are using MongoDB Atlas, replace `MONGO_URI` with your Atlas connection string (e.g., `mongodb+srv://<user>:<password>@cluster0.mongodb.net/chatty?retryWrites=true&w=majority`). Make sure your IP address is whitelisted in Atlas Network Access.
+
+Start the backend development server:
 
 ```bash
 npm run dev
 ```
 
+The server will start listening on `http://localhost:5000`.
+
 ---
 
-### 4. Frontend Setup
+### 3. Configure the Frontend
 
-Open a new terminal and navigate to the project root:
+Open a second terminal window, navigate to the `client` directory, and install dependencies:
 
 ```bash
-cd ..
+cd client
 npm install
+```
+
+Optionally create a `.env` file in the `client` directory (defaults to `http://localhost:5000` if omitted):
+
+```env
+VITE_API_URL=http://localhost:5000
+VITE_SOCKET_URL=http://localhost:5000
+```
+
+Start the Vite development server:
+
+```bash
 npm run dev
 ```
 
-The application will now be available at the local development URL provided by Vite.
+Open the printed localhost URL (typically `http://localhost:5173`) in your browser.
 
 ---
 
-## 🛡️ Security
+## Architecture and Socket Events
 
-Chatty implements several security practices:
+### Socket.IO Room Architecture
+- User Private Room: `user:<userId>` for direct messaging, friend requests, and personal notifications.
+- Channel Room: `channel:<channelId>` for text messages sent within a specific server channel.
+- Voice Room: `voice:<channelId>` for WebRTC peer signaling and speaking state updates.
+- Server Room: `server:<serverId>` for server-wide member and channel updates.
 
-* 🔑 JWT-based authentication
-* 🔒 Password hashing with bcrypt
-* 🛡️ Protected routes for authenticated users
-* 🔐 Sensitive credentials stored using environment variables
-* 🚫 `.env` files excluded from version control
-
-> **Never commit your `.env` file or expose your MongoDB connection string and JWT secret publicly.**
-
----
-
-## 🔮 Future Improvements
-
-* Group chats and community servers
-* Online/offline user presence
-* Typing indicators
-* Read receipts
-* Image and file sharing
-* Push notifications
-* Voice and video calling
-* Message reactions and replies
+### Key Socket Events
+- `authenticate`: Handshakes user ID with the socket connection and joins user room.
+- `send-direct-message` / `receive-direct-message`: 1-on-1 message delivery with database persistence.
+- `send-channel-message` / `receive-channel-message`: Server channel message broadcast.
+- `typing-start` / `typing-stop`: Emits debounced typing indicators to specific channels or direct users.
+- `message:edit`, `message:delete`, `message:react`: Real-time updates for edited content, deletions, and emoji reactions.
+- `join-voice-channel`, `leave-voice-channel`, `voice-signal`: WebRTC offer, answer, and ICE candidate negotiation.
 
 ---
 
-## 📄 License
+## Troubleshooting
 
-This project is open-source and available under the **MIT License**.
+### MongoDB SRV DNS Lookup Error
+If you encounter `querySrv ENOTFOUND` when connecting to MongoDB Atlas, your local DNS server or ISP is failing to resolve SRV records. To resolve this:
+- Switch your network adapter DNS to Google Public DNS (`8.8.8.8` and `8.8.4.4`) or Cloudflare DNS (`1.1.1.1`).
+- Or use the standard 3-node connection string format without `+srv` provided in MongoDB Atlas connection settings.
+
+### Port Conflicts
+If port `5000` or `5173` is already in use, update the `PORT` variable in `server/.env` and the `VITE_API_URL` / `VITE_SOCKET_URL` in `client/.env`.
 
 ---
 
-⭐ If you found this project interesting, consider giving it a star!
+## License
+
+This project is open-source and available under the ISC License.

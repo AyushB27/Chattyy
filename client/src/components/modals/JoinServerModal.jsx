@@ -36,49 +36,40 @@ export default function JoinServerModal({ isOpen, onClose, onServerJoined }) {
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-md p-4 animate-in fade-in duration-150">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4 animate-in fade-in duration-100">
       <div
-        className="relative w-full max-w-md rounded-2xl shadow-2xl overflow-hidden border"
+        className="relative w-full max-w-md rounded-lg shadow-2xl overflow-hidden border"
         style={{
-          backgroundColor: "var(--bg-popover)",
-          borderColor: "var(--border-subtle)",
+          backgroundColor: "#313338",
+          borderColor: "#1f2023",
         }}
       >
         {/* Header */}
         <div className="p-6 text-center">
           <button
             onClick={onClose}
-            className="absolute top-4 right-4 text-gray-400 hover:text-white transition cursor-pointer"
+            className="absolute top-4 right-4 text-[#949ba4] hover:text-[#f2f3f5] transition cursor-pointer"
           >
             <X size={20} />
           </button>
-          <div className="mx-auto w-12 h-12 bg-indigo-500/10 text-indigo-400 rounded-2xl flex items-center justify-center mb-3">
-            <Compass size={28} />
-          </div>
-          <h2
-            className="text-2xl font-black tracking-tight"
-            style={{ color: "var(--text-primary)" }}
-          >
+          <h2 className="text-xl font-bold text-[#f2f3f5]">
             Join a Server
           </h2>
-          <p className="text-xs mt-1" style={{ color: "var(--text-muted)" }}>
-            Enter an invite code or link to join an existing server instantly.
+          <p className="text-xs text-[#949ba4] mt-1">
+            Enter an invite code below to join an existing server.
           </p>
         </div>
 
         {error && (
-          <div className="mx-6 mb-4 px-3.5 py-2 bg-rose-500/10 border border-rose-500/50 rounded-xl text-rose-400 text-xs text-center font-medium">
+          <div className="mx-6 mb-3 p-2 bg-[#f23f43]/10 border border-[#f23f43]/50 rounded text-[#f23f43] text-xs text-center">
             {error}
           </div>
         )}
 
         <form onSubmit={handleSubmit} className="px-6 pb-6 space-y-4">
           <div>
-            <label
-              className="block text-xs font-bold uppercase tracking-wider mb-1.5"
-              style={{ color: "var(--text-secondary)" }}
-            >
-              INVITE CODE OR LINK
+            <label className="block text-xs font-bold uppercase tracking-wider text-[#b5bac1] mb-2">
+              INVITE CODE OR LINK <span className="text-[#f23f43]">*</span>
             </label>
             <input
               type="text"
@@ -86,27 +77,22 @@ export default function JoinServerModal({ isOpen, onClose, onServerJoined }) {
               placeholder="e.g. 7f8a9b1c"
               value={inviteCode}
               onChange={(e) => setInviteCode(e.target.value)}
-              className="w-full px-3.5 py-2.5 rounded-xl outline-none text-sm border focus:ring-2 focus:ring-indigo-500 transition"
-              style={{
-                backgroundColor: "var(--bg-input)",
-                borderColor: "var(--border-subtle)",
-                color: "var(--text-primary)",
-              }}
+              className="w-full px-3 py-2 rounded bg-[#1e1f22] text-[#dbdee1] outline-none text-sm border border-[#1f2023] focus:border-[#5865f2]"
             />
           </div>
 
-          <div className="flex justify-between items-center pt-2">
+          <div className="flex justify-between items-center pt-3 border-t border-[#35363c]">
             <button
               type="button"
               onClick={onClose}
-              className="px-4 py-2 text-sm text-gray-400 hover:underline cursor-pointer"
+              className="px-4 py-2 text-sm text-[#f2f3f5] hover:underline cursor-pointer"
             >
               Back
             </button>
             <button
               type="submit"
               disabled={loading}
-              className="px-6 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-sm font-bold transition disabled:opacity-50 cursor-pointer shadow-md"
+              className="px-6 py-2 bg-[#5865f2] hover:bg-[#4752c4] text-white rounded text-sm font-medium transition disabled:opacity-50 cursor-pointer"
             >
               {loading ? "Joining..." : "Join Server"}
             </button>

@@ -30,6 +30,9 @@ export default function ChatScreen() {
   const [isFriendsTabActive, setIsFriendsTabActive] = useState(true);
   const [activeFriend, setActiveFriend] = useState(null);
 
+  // Responsive mobile sidebar state
+  const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
+
   // Data State
   const [friends, setFriends] = useState([]);
   const [conversations, setConversations] = useState([]);
@@ -131,7 +134,6 @@ export default function ChatScreen() {
     };
 
     const onReceiveDirectMessage = (msg) => {
-      // Refresh conversations list in background
       fetchConversations();
 
       const senderId = msg.senderId?._id || msg.senderId;
@@ -193,6 +195,7 @@ export default function ChatScreen() {
     setIsDMsActive(false);
     setActiveServer(server);
     setActiveFriend(null);
+    setMobileSidebarOpen(false);
 
     const firstTextChannel =
       server.channels?.find((c) => c.type !== "voice") || server.channels?.[0];
@@ -204,14 +207,15 @@ export default function ChatScreen() {
     setActiveServer(null);
     setActiveChannel(null);
     setIsFriendsTabActive(true);
+    setMobileSidebarOpen(false);
   };
 
   const handleSelectFriend = (targetUser) => {
     setIsDMsActive(true);
     setIsFriendsTabActive(false);
     setActiveFriend(targetUser);
+    setMobileSidebarOpen(false);
 
-    // Add to conversations list immediately if not present
     setConversations((prev) => {
       if (prev.some((c) => c.user?._id === targetUser._id)) return prev;
       return [{ user: targetUser, lastMessage: { text: "" } }, ...prev];
@@ -231,7 +235,6 @@ export default function ChatScreen() {
         sender: user,
       });
 
-      // Update conversations list preview
       setConversations((prev) => {
         const filtered = prev.filter((c) => c.user?._id !== activeFriend._id);
         return [
@@ -366,58 +369,77 @@ export default function ChatScreen() {
 
   return (
     <div
-      className="h-screen w-screen flex overflow-hidden font-sans select-none"
+      className="h-screen w-screen flex overflow-hidden font-sans select-none text-[#dbdee1]"
       style={{ backgroundColor: "var(--bg-rail)" }}
     >
-      {/* 1. Left Server Rail */}
-      <ServerRail
-        servers={servers}
-        activeServer={activeServer}
-        onSelectServer={handleSelectServer}
-        onSelectDMs={handleSelectDMs}
-        isDMsActive={isDMsActive}
-        onOpenCreateServer={() => setCreateServerOpen(true)}
-        onOpenJoinServer={() => setJoinServerOpen(true)}
-        unreadCount={requests.length}
-      />
+      {/* Mobile Drawer Backdrop */}
+      {mobileSidebarOpen && (
+        <div
+          onClick={() => setMobileSidebarOpen(false)}
+          className="fixed inset-0 z-40 bg-black/60 md:hidden animate-in fade-in"
+        />
+      )}
 
-      {/* 2. Sub-Sidebar (Channels or DMs) */}
-      <Sidebar
-        isDMsActive={isDMsActive}
-        activeServer={activeServer}
-        activeChannel={activeChannel}
-        onSelectChannel={(ch) => setActiveChannel(ch)}
-        friends={friends}
-        conversations={conversations}
-        requestsCount={requests.length}
-        activeFriend={activeFriend}
-        onSelectFriend={handleSelectFriend}
-        onSelectFriendsTab={() => {
-          setIsFriendsTabActive(true);
-          setActiveFriend(null);
-        }}
-        isFriendsTabActive={isFriendsTabActive}
-        onOpenCreateChannel={() => setCreateChannelOpen(true)}
-        onOpenInviteModal={() => setInviteModalOpen(true)}
-        onOpenSettings={() => setSettingsOpen(true)}
-        onLeaveOrDeleteServer={handleLeaveOrDeleteServer}
-      />
+      {/* 1. Left Server Rail & 2. Sub-Sidebar (Desktop & Mobile Drawer) */}
+      <div
+        className={`fixed inset-y-0 left-0 z-50 flex md:relative md:z-auto transition-transform duration-200 ${
+          mobileSidebarOpen ? "translate-x-0" : "-translate-x-full md:translate-x-0"
+        }`}
+      >
+        <ServerRail
+          servers={servers}
+          activeServer={activeServer}
+          onSelectServer={handleSelectServer}
+          onSelectDMs={handleSelectDMs}
+          isDMsActive={isDMsActive}
+          onOpenCreateServer={() => setCreateServerOpen(true)}
+          onOpenJoinServer={() => setJoinServerOpen(true)}
+          unreadCount={requests.length}
+        />
+
+        <Sidebar
+          isDMsActive={isDMsActive}
+          activeServer={activeServer}
+          activeChannel={activeChannel}
+          onSelectChannel={(ch) => {
+            setActiveChannel(ch);
+            setMobileSidebarOpen(false);
+          }}
+          friends={friends}
+          conversations={conversations}
+          requestsCount={requests.length}
+          activeFriend={activeFriend}
+          onSelectFriend={handleSelectFriend}
+          onSelectFriendsTab={() => {
+            setIsFriendsTabActive(true);
+            setActiveFriend(null);
+            setMobileSidebarOpen(false);
+          }}
+          isFriendsTabActive={isFriendsTabActive}
+          onOpenCreateChannel={() => setCreateChannelOpen(true)}
+          onOpenInviteModal={() => setInviteModalOpen(true)}
+          onOpenSettings={() => setSettingsOpen(true)}
+          onLeaveOrDeleteServer={handleLeaveOrDeleteServer}
+        />
+      </div>
 
       {/* 3. Main Content Area */}
       {isDMsActive && isFriendsTabActive && !activeFriend ? (
-        <FriendsView
-          friends={friends}
-          requests={requests}
-          sentRequests={sentRequests}
-          onAcceptRequest={handleAcceptRequest}
-          onRejectRequest={handleRejectRequest}
-          onCancelRequest={handleCancelRequest}
-          onRemoveFriend={handleRemoveFriend}
-          onSendFriendRequest={handleSendFriendRequest}
-          onStartDM={handleSelectFriend}
-        />
+        <div className="flex-1 flex flex-col min-w-0">
+          <FriendsView
+            friends={friends}
+            requests={requests}
+            sentRequests={sentRequests}
+            onAcceptRequest={handleAcceptRequest}
+            onRejectRequest={handleRejectRequest}
+            onCancelRequest={handleCancelRequest}
+            onRemoveFriend={handleRemoveFriend}
+            onSendFriendRequest={handleSendFriendRequest}
+            onStartDM={handleSelectFriend}
+          />
+        </div>
       ) : (
-        <div className="flex-1 flex overflow-hidden">
+        <div className="flex-1 flex overflow-hidden min-w-0">
           <ChatArea
             isDM={isDMsActive}
             channel={activeChannel}
@@ -432,18 +454,21 @@ export default function ChatScreen() {
             }
             isMemberListOpen={isMemberListOpen}
             onToggleMemberList={() => setIsMemberListOpen(!isMemberListOpen)}
+            onToggleMobileSidebar={() => setMobileSidebarOpen(!mobileSidebarOpen)}
             canDelete={isOwnerOrAdmin}
           />
 
-          {/* 4. Server Member List */}
+          {/* 4. Server Member List (Desktop) */}
           {!isDMsActive && isMemberListOpen && activeServer && (
-            <MemberList
-              members={activeServer.members || []}
-              ownerId={activeServer.ownerId}
-              onMemberClick={(clickedUser, role) =>
-                setPopoutUser({ user: clickedUser, role })
-              }
-            />
+            <div className="hidden lg:flex">
+              <MemberList
+                members={activeServer.members || []}
+                ownerId={activeServer.ownerId}
+                onMemberClick={(clickedUser, role) =>
+                  setPopoutUser({ user: clickedUser, role })
+                }
+              />
+            </div>
           )}
         </div>
       )}

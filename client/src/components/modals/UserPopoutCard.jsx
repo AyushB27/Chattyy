@@ -1,35 +1,32 @@
 import React from "react";
-import { MessageSquare, X, Shield } from "lucide-react";
+import { MessageSquare, X } from "lucide-react";
 import Avatar from "../common/Avatar";
 
 export default function UserPopoutCard({ user, role, onClose, onDirectMessage }) {
   if (!user) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-md p-4 animate-in fade-in duration-100">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4 animate-in fade-in duration-100">
       <div
-        className="relative w-full max-w-xs rounded-3xl shadow-2xl overflow-hidden border"
+        className="relative w-full max-w-xs rounded-lg shadow-2xl overflow-hidden border"
         style={{
-          backgroundColor: "var(--bg-popover)",
-          borderColor: "var(--border-subtle)",
+          backgroundColor: "#232428",
+          borderColor: "#1f2023",
         }}
       >
         {/* Banner Top */}
-        <div className="h-22 bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600 relative">
+        <div className="h-16 bg-[#5865f2] relative">
           <button
             onClick={onClose}
-            className="absolute top-3 right-3 text-white/80 hover:text-white bg-black/30 p-1.5 rounded-full hover:bg-black/50 transition cursor-pointer"
+            className="absolute top-2 right-2 text-white/80 hover:text-white bg-black/20 p-1 rounded-full hover:bg-black/40 transition cursor-pointer"
           >
             <X size={14} />
           </button>
         </div>
 
         {/* Avatar positioned over banner */}
-        <div className="px-5 pb-5 -mt-10 relative">
-          <div
-            className="p-1 rounded-full inline-block mb-2 shadow-xl"
-            style={{ backgroundColor: "var(--bg-popover)" }}
-          >
+        <div className="px-4 pb-4 -mt-8 relative">
+          <div className="p-1 rounded-full inline-block mb-1.5 bg-[#232428]">
             <Avatar
               src={user.avatar}
               name={user.username}
@@ -38,58 +35,48 @@ export default function UserPopoutCard({ user, role, onClose, onDirectMessage })
             />
           </div>
 
-          <div className="space-y-1">
-            <div className="flex items-center gap-2">
-              <h3 className="text-lg font-black leading-tight" style={{ color: "var(--text-primary)" }}>
+          <div className="space-y-0.5">
+            <div className="flex items-center gap-1.5">
+              <h3 className="text-base font-bold text-[#f2f3f5]">
                 {user.username}
               </h3>
               {role && (
-                <span className="text-[10px] uppercase font-bold tracking-wider px-2 py-0.5 rounded-md bg-indigo-500/20 text-indigo-400 border border-indigo-500/30">
+                <span className="text-[10px] uppercase font-bold tracking-wider px-1.5 py-0.5 rounded bg-[#5865f2]/20 text-[#5865f2] border border-[#5865f2]/30">
                   {role}
                 </span>
               )}
             </div>
-            <p className="text-xs" style={{ color: "var(--text-muted)" }}>{user.email}</p>
+            <p className="text-xs text-[#949ba4]">{user.email}</p>
           </div>
 
           {user.customStatus && (
-            <div
-              className="mt-3 text-xs p-2.5 rounded-xl italic border"
-              style={{
-                backgroundColor: "var(--bg-input)",
-                borderColor: "var(--border-subtle)",
-                color: "var(--text-secondary)",
-              }}
-            >
+            <div className="mt-2.5 text-xs p-2 rounded bg-[#1e1f22] text-[#dbdee1] border border-[#1f2023]">
               💬 "{user.customStatus}"
             </div>
           )}
 
           {user.bio && (
-            <div className="mt-3">
-              <div
-                className="text-[10px] font-black uppercase tracking-wider mb-1"
-                style={{ color: "var(--text-muted)" }}
-              >
+            <div className="mt-2.5">
+              <div className="text-[10px] font-bold uppercase tracking-wider text-[#949ba4] mb-1">
                 About Me
               </div>
-              <p className="text-xs whitespace-pre-wrap font-medium" style={{ color: "var(--text-secondary)" }}>
+              <p className="text-xs whitespace-pre-wrap text-[#dbdee1]">
                 {user.bio}
               </p>
             </div>
           )}
 
           {onDirectMessage && (
-            <div className="mt-5 pt-3 border-t" style={{ borderColor: "var(--border-subtle)" }}>
+            <div className="mt-4 pt-3 border-t border-[#35363c]">
               <button
                 onClick={() => {
                   onDirectMessage(user);
                   onClose();
                 }}
-                className="w-full flex items-center justify-center gap-2 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-bold transition cursor-pointer shadow-md"
+                className="w-full flex items-center justify-center gap-2 py-2 bg-[#5865f2] hover:bg-[#4752c4] text-white rounded text-xs font-semibold transition cursor-pointer"
               >
                 <MessageSquare size={14} />
-                Send Direct Message
+                Send Message
               </button>
             </div>
           )}

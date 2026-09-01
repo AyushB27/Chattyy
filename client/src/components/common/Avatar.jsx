@@ -1,39 +1,38 @@
 import React from "react";
 
-const statusColors = {
-  online: "bg-emerald-500",
-  idle: "bg-amber-500",
-  dnd: "bg-rose-500",
-  offline: "bg-gray-500",
+const statusColorStyles = {
+  online: "bg-[#23a55a]",
+  idle: "bg-[#f0b232]",
+  dnd: "bg-[#f23f43]",
+  offline: "bg-[#80848e]",
 };
 
 const sizeClasses = {
-  xs: "w-6 h-6 text-xs",
-  sm: "w-8 h-8 text-sm",
-  md: "w-10 h-10 text-base",
-  lg: "w-12 h-12 text-lg",
+  xs: "w-5 h-5 text-[10px]",
+  sm: "w-8 h-8 text-xs font-semibold",
+  md: "w-10 h-10 text-sm font-semibold",
+  lg: "w-12 h-12 text-base font-semibold",
   xl: "w-20 h-20 text-2xl font-bold",
 };
 
 const statusSizeClasses = {
-  xs: "w-2 h-2 border",
-  sm: "w-2.5 h-2.5 border-2",
-  md: "w-3.5 h-3.5 border-2",
-  lg: "w-4 h-4 border-2",
-  xl: "w-5 h-5 border-[3px]",
+  xs: "w-2 h-2 border-[1.5px]",
+  sm: "w-3 h-3 border-2 -bottom-0.5 -right-0.5",
+  md: "w-3.5 h-3.5 border-2 -bottom-0.5 -right-0.5",
+  lg: "w-4 h-4 border-[2.5px] -bottom-0.5 -right-0.5",
+  xl: "w-5 h-5 border-[3px] bottom-0 right-0",
 };
 
-// Generates consistent pleasing background colors based on username
 const getAvatarBg = (name = "") => {
   const colors = [
-    "bg-indigo-600",
-    "bg-emerald-600",
-    "bg-amber-600",
-    "bg-rose-600",
-    "bg-purple-600",
-    "bg-cyan-600",
-    "bg-blue-600",
-    "bg-pink-600",
+    "bg-[#5865f2]",
+    "bg-[#57f287]",
+    "bg-[#fee75c]",
+    "bg-[#eb459e]",
+    "bg-[#ed4245]",
+    "bg-[#5865f2]",
+    "bg-[#3ba55d]",
+    "bg-[#faa81a]",
   ];
   let hash = 0;
   for (let i = 0; i < name.length; i++) {
@@ -71,7 +70,7 @@ export default function Avatar({
         />
       ) : (
         <div
-          className={`${sizeClasses[size]} ${bg} text-white rounded-full flex items-center justify-center font-semibold shadow-inner`}
+          className={`${sizeClasses[size]} ${bg} text-white rounded-full flex items-center justify-center`}
         >
           {initial}
         </div>
@@ -79,8 +78,8 @@ export default function Avatar({
 
       {status && (
         <span
-          className={`absolute bottom-0 right-0 rounded-full border-[#1e1f22] ${
-            statusColors[status] || statusColors.offline
+          className={`absolute rounded-full border-[#1e1f22] ${
+            statusColorStyles[status] || statusColorStyles.offline
           } ${statusSizeClasses[size]}`}
           title={status.toUpperCase()}
         />

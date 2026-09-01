@@ -50,55 +50,44 @@ export default function AuthScreen() {
 
   return (
     <div
-      className="min-h-screen flex items-center justify-center px-4 select-none relative overflow-hidden"
-      style={{ backgroundColor: "var(--bg-rail)" }}
+      className="min-h-screen flex items-center justify-center p-4 select-none relative"
+      style={{ backgroundColor: "#1e1f22" }}
     >
-      {/* Background Glow Circles */}
-      <div className="absolute -top-40 -left-40 w-96 h-96 bg-indigo-600/20 rounded-full blur-3xl pointer-events-none" />
-      <div className="absolute -bottom-40 -right-40 w-96 h-96 bg-purple-600/20 rounded-full blur-3xl pointer-events-none" />
-
       {/* Theme Toggle in top-right */}
       <button
         onClick={cycleTheme}
-        className="absolute top-6 right-6 flex items-center gap-2 px-3 py-1.5 rounded-xl border text-xs font-semibold hover:bg-white/10 transition cursor-pointer"
-        style={{
-          borderColor: "var(--border-subtle)",
-          color: "var(--text-secondary)",
-        }}
+        className="absolute top-4 right-4 flex items-center gap-1.5 px-2.5 py-1.5 rounded border border-[#35363c] text-xs font-medium text-[#949ba4] hover:text-[#f2f3f5] hover:bg-[#35373c] transition cursor-pointer"
       >
-        <Palette size={14} className="text-indigo-400" />
+        <Palette size={14} className="text-[#5865f2]" />
         <span className="capitalize">{theme}</span>
       </button>
 
-      {/* Card */}
+      {/* Auth Card */}
       <div
-        className="w-full max-w-md rounded-3xl shadow-2xl p-8 border relative z-10 animate-in fade-in duration-200"
+        className="w-full max-w-md rounded-lg shadow-xl p-8 border animate-in fade-in duration-100"
         style={{
-          backgroundColor: "var(--bg-popover)",
-          borderColor: "var(--border-subtle)",
+          backgroundColor: "#313338",
+          borderColor: "#1f2023",
         }}
       >
-        {/* Logo & Header */}
+        {/* Header */}
         <div className="text-center mb-6">
-          <div className="mx-auto w-14 h-14 bg-indigo-600 rounded-2xl flex items-center justify-center text-white shadow-xl shadow-indigo-500/30 mb-3">
-            <MessageSquare size={32} />
+          <div className="mx-auto w-12 h-12 bg-[#5865f2] rounded-full flex items-center justify-center text-white shadow-md mb-3">
+            <MessageSquare size={24} />
           </div>
-          <h1
-            className="text-2xl font-black tracking-tight"
-            style={{ color: "var(--text-primary)" }}
-          >
-            {isLogin ? "Welcome back to Chatty" : "Create your Chatty Account"}
+          <h1 className="text-xl font-bold text-[#f2f3f5]">
+            {isLogin ? "Welcome back!" : "Create an account"}
           </h1>
-          <p className="text-xs mt-1 font-medium" style={{ color: "var(--text-muted)" }}>
+          <p className="text-xs text-[#949ba4] mt-1">
             {isLogin
               ? "We're so excited to see you again!"
-              : "Hang out with friends, join servers, and chat in real-time."}
+              : "Start chatting with friends and community servers."}
           </p>
         </div>
 
-        {/* Error Alert */}
+        {/* Error */}
         {error && (
-          <div className="mb-4 bg-rose-500/10 border border-rose-500/50 text-rose-400 text-xs p-3 rounded-xl text-center font-semibold">
+          <div className="mb-4 bg-[#f23f43]/10 border border-[#f23f43]/50 text-[#f23f43] text-xs p-2.5 rounded text-center">
             {error}
           </div>
         )}
@@ -106,11 +95,8 @@ export default function AuthScreen() {
         {/* Form */}
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
-            <label
-              className="block text-[11px] font-black uppercase tracking-wider mb-1.5"
-              style={{ color: "var(--text-secondary)" }}
-            >
-              EMAIL ADDRESS <span className="text-rose-500">*</span>
+            <label className="block text-[11px] font-bold uppercase tracking-wider text-[#b5bac1] mb-1.5">
+              EMAIL <span className="text-[#f23f43]">*</span>
             </label>
             <input
               type="email"
@@ -118,68 +104,44 @@ export default function AuthScreen() {
               placeholder="name@example.com"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              className="w-full px-4 py-2.5 rounded-xl outline-none text-sm border focus:ring-2 focus:ring-indigo-500 transition font-medium"
-              style={{
-                backgroundColor: "var(--bg-input)",
-                borderColor: "var(--border-subtle)",
-                color: "var(--text-primary)",
-              }}
+              className="w-full px-3 py-2 rounded bg-[#1e1f22] text-[#dbdee1] outline-none text-sm border border-[#1f2023] focus:border-[#5865f2]"
             />
           </div>
 
           {!isLogin && (
             <div>
-              <label
-                className="block text-[11px] font-black uppercase tracking-wider mb-1.5"
-                style={{ color: "var(--text-secondary)" }}
-              >
-                USERNAME <span className="text-rose-500">*</span>
+              <label className="block text-[11px] font-bold uppercase tracking-wider text-[#b5bac1] mb-1.5">
+                USERNAME <span className="text-[#f23f43]">*</span>
               </label>
               <input
                 type="text"
                 required
-                placeholder="AwesomeUser"
+                placeholder="Username"
                 value={username}
                 onChange={(e) => setUsername(e.target.value)}
-                className="w-full px-4 py-2.5 rounded-xl outline-none text-sm border focus:ring-2 focus:ring-indigo-500 transition font-medium"
-                style={{
-                  backgroundColor: "var(--bg-input)",
-                  borderColor: "var(--border-subtle)",
-                  color: "var(--text-primary)",
-                }}
+                className="w-full px-3 py-2 rounded bg-[#1e1f22] text-[#dbdee1] outline-none text-sm border border-[#1f2023] focus:border-[#5865f2]"
               />
             </div>
           )}
 
           {!isLogin && (
             <div>
-              <label
-                className="block text-[11px] font-black uppercase tracking-wider mb-1.5"
-                style={{ color: "var(--text-secondary)" }}
-              >
+              <label className="block text-[11px] font-bold uppercase tracking-wider text-[#b5bac1] mb-1.5">
                 AVATAR IMAGE URL (OPTIONAL)
               </label>
               <input
                 type="url"
-                placeholder="https://images.unsplash.com/..."
+                placeholder="https://..."
                 value={avatar}
                 onChange={(e) => setAvatar(e.target.value)}
-                className="w-full px-4 py-2.5 rounded-xl outline-none text-sm border focus:ring-2 focus:ring-indigo-500 transition font-medium"
-                style={{
-                  backgroundColor: "var(--bg-input)",
-                  borderColor: "var(--border-subtle)",
-                  color: "var(--text-primary)",
-                }}
+                className="w-full px-3 py-2 rounded bg-[#1e1f22] text-[#dbdee1] outline-none text-sm border border-[#1f2023] focus:border-[#5865f2]"
               />
             </div>
           )}
 
           <div>
-            <label
-              className="block text-[11px] font-black uppercase tracking-wider mb-1.5"
-              style={{ color: "var(--text-secondary)" }}
-            >
-              PASSWORD <span className="text-rose-500">*</span>
+            <label className="block text-[11px] font-bold uppercase tracking-wider text-[#b5bac1] mb-1.5">
+              PASSWORD <span className="text-[#f23f43]">*</span>
             </label>
             <input
               type="password"
@@ -187,22 +149,14 @@ export default function AuthScreen() {
               placeholder="••••••••"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              className="w-full px-4 py-2.5 rounded-xl outline-none text-sm border focus:ring-2 focus:ring-indigo-500 transition font-medium"
-              style={{
-                backgroundColor: "var(--bg-input)",
-                borderColor: "var(--border-subtle)",
-                color: "var(--text-primary)",
-              }}
+              className="w-full px-3 py-2 rounded bg-[#1e1f22] text-[#dbdee1] outline-none text-sm border border-[#1f2023] focus:border-[#5865f2]"
             />
           </div>
 
           {!isLogin && (
             <div>
-              <label
-                className="block text-[11px] font-black uppercase tracking-wider mb-1.5"
-                style={{ color: "var(--text-secondary)" }}
-              >
-                CONFIRM PASSWORD <span className="text-rose-500">*</span>
+              <label className="block text-[11px] font-bold uppercase tracking-wider text-[#b5bac1] mb-1.5">
+                CONFIRM PASSWORD <span className="text-[#f23f43]">*</span>
               </label>
               <input
                 type="password"
@@ -210,12 +164,7 @@ export default function AuthScreen() {
                 placeholder="••••••••"
                 value={confirmPassword}
                 onChange={(e) => setConfirmPassword(e.target.value)}
-                className="w-full px-4 py-2.5 rounded-xl outline-none text-sm border focus:ring-2 focus:ring-indigo-500 transition font-medium"
-                style={{
-                  backgroundColor: "var(--bg-input)",
-                  borderColor: "var(--border-subtle)",
-                  color: "var(--text-primary)",
-                }}
+                className="w-full px-3 py-2 rounded bg-[#1e1f22] text-[#dbdee1] outline-none text-sm border border-[#1f2023] focus:border-[#5865f2]"
               />
             </div>
           )}
@@ -223,21 +172,21 @@ export default function AuthScreen() {
           <button
             type="submit"
             disabled={loading}
-            className="w-full py-3 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-bold text-sm transition disabled:opacity-50 cursor-pointer shadow-lg shadow-indigo-500/25 mt-2"
+            className="w-full py-2.5 bg-[#5865f2] hover:bg-[#4752c4] text-white rounded font-semibold text-sm transition disabled:opacity-50 cursor-pointer mt-1"
           >
-            {loading ? "Please wait..." : isLogin ? "Log In" : "Sign Up"}
+            {loading ? "Please wait..." : isLogin ? "Log In" : "Continue"}
           </button>
         </form>
 
         {/* Toggle */}
-        <div className="mt-5 text-xs text-center" style={{ color: "var(--text-muted)" }}>
+        <div className="mt-4 text-xs text-[#949ba4]">
           {isLogin ? "Need an account?" : "Already have an account?"}
           <button
             onClick={() => {
               setIsLogin(!isLogin);
               setError("");
             }}
-            className="ml-1.5 text-indigo-400 hover:underline font-bold cursor-pointer"
+            className="ml-1 text-[#5865f2] hover:underline font-medium cursor-pointer"
           >
             {isLogin ? "Register" : "Log In"}
           </button>

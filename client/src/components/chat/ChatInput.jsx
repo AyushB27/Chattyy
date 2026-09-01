@@ -5,7 +5,6 @@ import {
   Send,
   X,
   CornerDownRight,
-  Sparkles,
 } from "lucide-react";
 
 const emojiCategories = {
@@ -33,7 +32,7 @@ export default function ChatInput({
   const pickerRef = useRef(null);
   const typingTimeoutRef = useRef(null);
 
-  // Close emoji picker when clicking outside
+  // Close emoji picker on outside click
   useEffect(() => {
     const handleOutsideClick = (e) => {
       if (pickerRef.current && !pickerRef.current.contains(e.target)) {
@@ -97,7 +96,6 @@ export default function ChatInput({
       const newText = text.substring(0, start) + emoji + text.substring(end);
       setText(newText);
 
-      // Restore cursor position right after the inserted emoji
       setTimeout(() => {
         input.focus();
         input.setSelectionRange(start + emoji.length, start + emoji.length);
@@ -119,27 +117,26 @@ export default function ChatInput({
   };
 
   return (
-    <div className="p-4 relative" style={{ backgroundColor: "var(--bg-chat)" }}>
-      {/* Reply Banner */}
+    <div className="px-4 pb-6 pt-0 relative select-none">
+      {/* Attached Reply Preview Bar */}
       {replyingTo && (
         <div
-          className="flex items-center justify-between px-3 py-1.5 rounded-t-xl border-t border-x text-xs"
+          className="flex items-center justify-between px-3 py-1.5 rounded-t-lg text-xs"
           style={{
-            backgroundColor: "var(--bg-card)",
-            borderColor: "var(--border-subtle)",
-            color: "var(--text-secondary)",
+            backgroundColor: "#2b2d31",
+            color: "#b5bac1",
           }}
         >
           <div className="flex items-center gap-1.5 truncate">
-            <CornerDownRight size={14} className="text-indigo-400" />
+            <CornerDownRight size={14} className="text-[#5865f2]" />
             <span>Replying to</span>
-            <span className="font-semibold text-indigo-400">
+            <span className="font-semibold text-[#5865f2]">
               @{replyingTo.senderId?.username || replyingTo.from?.split("@")[0] || "user"}
             </span>
           </div>
           <button
             onClick={onCancelReply}
-            className="text-gray-400 hover:text-white p-0.5 rounded transition cursor-pointer"
+            className="text-[#949ba4] hover:text-[#f2f3f5] p-0.5 rounded transition cursor-pointer"
           >
             <X size={14} />
           </button>
@@ -149,22 +146,21 @@ export default function ChatInput({
       {/* Attachment Previews */}
       {attachments.length > 0 && (
         <div
-          className="flex gap-2 p-2.5 rounded-t-xl"
-          style={{ backgroundColor: "var(--bg-card)" }}
+          className="flex gap-2 p-2 rounded-t-lg"
+          style={{ backgroundColor: "#2b2d31" }}
         >
           {attachments.map((att, idx) => (
             <div key={idx} className="relative group">
               <img
                 src={att.url}
                 alt="attachment"
-                className="w-16 h-16 object-cover rounded-lg border"
-                style={{ borderColor: "var(--border-subtle)" }}
+                className="w-16 h-16 object-cover rounded border border-[#1f2023]"
               />
               <button
                 onClick={() =>
                   setAttachments((prev) => prev.filter((_, i) => i !== idx))
                 }
-                className="absolute -top-1.5 -right-1.5 bg-rose-500 text-white rounded-full p-0.5 hover:bg-rose-600 transition"
+                className="absolute -top-1.5 -right-1.5 bg-[#f23f43] text-white rounded-full p-0.5 hover:bg-[#da373c] transition"
               >
                 <X size={12} />
               </button>
@@ -173,22 +169,21 @@ export default function ChatInput({
         </div>
       )}
 
-      {/* Main Input Box */}
+      {/* Composer Input Box */}
       <div
-        className={`flex items-center gap-2.5 px-4 py-3 border shadow-sm transition-all focus-within:ring-2 focus-within:ring-indigo-500/50 ${
-          replyingTo || attachments.length > 0 ? "rounded-b-2xl" : "rounded-2xl"
+        className={`flex items-center gap-3 px-4 py-2.5 transition-colors ${
+          replyingTo || attachments.length > 0 ? "rounded-b-lg" : "rounded-lg"
         }`}
         style={{
-          backgroundColor: "var(--bg-input)",
-          borderColor: "var(--border-subtle)",
+          backgroundColor: "#383a40",
         }}
       >
         {/* Attachment Button */}
         <button
           type="button"
           onClick={() => setShowAttachmentModal(!showAttachmentModal)}
-          className="text-gray-400 hover:text-indigo-400 transition cursor-pointer flex-shrink-0"
-          title="Add Attachment"
+          className="text-[#b5bac1] hover:text-[#f2f3f5] transition cursor-pointer flex-shrink-0"
+          title="Attach Image / URL"
         >
           <PlusCircle size={22} />
         </button>
@@ -201,19 +196,18 @@ export default function ChatInput({
           onChange={handleChange}
           onKeyDown={handleKeyDown}
           placeholder={placeholder}
-          className="flex-1 bg-transparent outline-none text-sm leading-relaxed"
-          style={{ color: "var(--text-primary)" }}
+          className="flex-1 bg-transparent text-[#dbdee1] placeholder-[#80848e] outline-none text-sm leading-relaxed"
         />
 
-        {/* Emoji Button & Popover */}
+        {/* Emoji Button */}
         <div className="relative" ref={pickerRef}>
           <button
             type="button"
             onClick={() => setShowEmojiPicker((prev) => !prev)}
-            className={`transition cursor-pointer flex-shrink-0 p-1 rounded-lg ${
-              showEmojiPicker ? "text-amber-400 bg-amber-400/10" : "text-gray-400 hover:text-amber-400"
+            className={`transition cursor-pointer flex-shrink-0 p-1 rounded ${
+              showEmojiPicker ? "text-[#fee75c]" : "text-[#b5bac1] hover:text-[#fee75c]"
             }`}
-            title="Emoji Picker"
+            title="Add Emoji"
           >
             <Smile size={22} />
           </button>
@@ -221,24 +215,24 @@ export default function ChatInput({
           {/* Categorized Emoji Tray */}
           {showEmojiPicker && (
             <div
-              className="absolute right-0 bottom-12 z-50 w-72 rounded-2xl p-3 shadow-2xl border animate-in zoom-in-95 duration-100 backdrop-blur-md"
+              className="absolute right-0 bottom-12 z-50 w-72 rounded-lg p-3 shadow-xl border animate-in fade-in duration-100"
               style={{
-                backgroundColor: "var(--bg-popover)",
-                borderColor: "var(--border-subtle)",
+                backgroundColor: "#2b2d31",
+                borderColor: "#1f2023",
               }}
             >
               {/* Category Tabs */}
-              <div className="flex justify-between border-b pb-2 mb-2" style={{ borderColor: "var(--border-subtle)" }}>
+              <div className="flex justify-between border-b border-[#35363c] pb-2 mb-2">
                 {Object.keys(emojiCategories).map((cat) => (
                   <button
                     key={cat}
                     type="button"
                     onMouseDown={(e) => e.preventDefault()}
                     onClick={() => setActiveCategory(cat)}
-                    className={`text-xs px-2 py-1 rounded-md font-semibold transition cursor-pointer ${
+                    className={`text-xs px-2 py-1 rounded font-semibold transition cursor-pointer ${
                       activeCategory === cat
-                        ? "bg-indigo-500 text-white"
-                        : "text-gray-400 hover:text-gray-200"
+                        ? "bg-[#5865f2] text-white"
+                        : "text-[#949ba4] hover:text-[#dbdee1]"
                     }`}
                   >
                     {cat}
@@ -247,14 +241,14 @@ export default function ChatInput({
               </div>
 
               {/* Emoji Grid */}
-              <div className="grid grid-cols-5 gap-2 max-h-48 overflow-y-auto p-1">
+              <div className="grid grid-cols-5 gap-1 max-h-48 overflow-y-auto p-1">
                 {emojiCategories[activeCategory].map((emoji) => (
                   <button
                     key={emoji}
                     type="button"
                     onMouseDown={(e) => e.preventDefault()}
                     onClick={() => handleInsertEmoji(emoji)}
-                    className="p-2 hover:bg-white/10 rounded-xl text-xl flex items-center justify-center transition transform hover:scale-125 cursor-pointer select-none"
+                    className="p-1.5 hover:bg-[#35373c] rounded text-lg flex items-center justify-center transition cursor-pointer select-none"
                   >
                     {emoji}
                   </button>
@@ -269,30 +263,29 @@ export default function ChatInput({
           type="button"
           onClick={handleSend}
           disabled={!text.trim() && attachments.length === 0}
-          className="p-2 rounded-xl text-white font-semibold transition disabled:opacity-30 cursor-pointer shadow-md flex-shrink-0"
-          style={{ backgroundColor: "var(--accent)" }}
-          title="Send"
+          className="text-[#5865f2] hover:text-[#4752c4] disabled:text-[#4e5058] transition cursor-pointer flex-shrink-0 p-1"
+          title="Send message"
         >
-          <Send size={16} />
+          <Send size={18} />
         </button>
       </div>
 
-      {/* Quick Attachment URL Modal */}
+      {/* Attachment URL Modal */}
       {showAttachmentModal && (
         <div
-          className="absolute left-4 bottom-20 z-50 rounded-2xl p-4 shadow-2xl w-80 border animate-in zoom-in-95 duration-100"
+          className="absolute left-4 bottom-20 z-50 rounded-lg p-3 shadow-xl w-80 border animate-in fade-in duration-100"
           style={{
-            backgroundColor: "var(--bg-popover)",
-            borderColor: "var(--border-subtle)",
+            backgroundColor: "#2b2d31",
+            borderColor: "#1f2023",
           }}
         >
           <div className="flex items-center justify-between mb-2">
-            <span className="text-xs font-bold uppercase tracking-wider" style={{ color: "var(--text-primary)" }}>
+            <span className="text-xs font-bold uppercase tracking-wider text-[#949ba4]">
               Attach Image URL
             </span>
             <button
               onClick={() => setShowAttachmentModal(false)}
-              className="text-gray-400 hover:text-white"
+              className="text-[#949ba4] hover:text-[#f2f3f5]"
             >
               <X size={14} />
             </button>
@@ -300,21 +293,15 @@ export default function ChatInput({
           <div className="flex gap-2">
             <input
               type="url"
-              placeholder="https://images.unsplash.com/..."
+              placeholder="https://..."
               value={attachmentUrl}
               onChange={(e) => setAttachmentUrl(e.target.value)}
-              className="flex-1 px-3 py-1.5 rounded-lg text-xs outline-none border"
-              style={{
-                backgroundColor: "var(--bg-input)",
-                borderColor: "var(--border-subtle)",
-                color: "var(--text-primary)",
-              }}
+              className="flex-1 px-2.5 py-1.5 rounded text-xs outline-none bg-[#1e1f22] text-[#dbdee1] border border-[#1f2023] focus:border-[#5865f2]"
             />
             <button
               type="button"
               onClick={handleAddAttachment}
-              className="px-3 py-1.5 text-white rounded-lg text-xs font-semibold cursor-pointer shadow"
-              style={{ backgroundColor: "var(--accent)" }}
+              className="px-3 py-1.5 bg-[#5865f2] hover:bg-[#4752c4] text-white rounded text-xs font-medium cursor-pointer"
             >
               Add
             </button>

@@ -1,11 +1,11 @@
 import React, { useState, useRef, useEffect } from "react";
-import { Smile, Reply, Edit2, Trash2, Check, X, CornerDownRight } from "lucide-react";
+import { Smile, Reply, Edit2, Trash2, CornerDownRight } from "lucide-react";
 import Avatar from "../common/Avatar";
 import { useAuth } from "../../context/AuthContext";
 
 const quickEmojis = ["👍", "❤️", "🔥", "😂", "🎉", "👀", "✨", "💯"];
 
-const formatTimestamp = (dateString) => {
+const formatFullTimestamp = (dateString) => {
   if (!dateString) return "";
   const date = new Date(dateString);
   const now = new Date();
@@ -21,7 +21,13 @@ const formatTimestamp = (dateString) => {
     return `Yesterday at ${timeStr}`;
   }
 
-  return `${date.toLocaleDateString([], { month: "short", day: "numeric" })} at ${timeStr}`;
+  return `${date.toLocaleDateString([], { month: "2-digit", day: "2-digit", year: "numeric" })} ${timeStr}`;
+};
+
+const formatGutterTime = (dateString) => {
+  if (!dateString) return "";
+  const date = new Date(dateString);
+  return date.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
 };
 
 const renderFormattedContent = (content = "") => {
@@ -35,12 +41,7 @@ const renderFormattedContent = (content = "") => {
       return (
         <pre
           key={index}
-          className="my-2 p-3 rounded-xl font-mono text-xs overflow-x-auto border"
-          style={{
-            backgroundColor: "var(--bg-input)",
-            borderColor: "var(--border-subtle)",
-            color: "var(--text-primary)",
-          }}
+          className="my-1.5 p-3 rounded bg-[#1e1f22] text-[#57f287] font-mono text-xs overflow-x-auto border border-[#232428]"
         >
           <code>{code}</code>
         </pre>
@@ -57,6 +58,7 @@ const renderFormattedContent = (content = "") => {
 
 export default function MessageItem({
   message,
+  isConsecutive = false,
   onReply,
   onEdit,
   onDelete,
@@ -105,52 +107,62 @@ export default function MessageItem({
 
   return (
     <div
-      className="relative group flex items-start gap-3.5 px-4 py-2 hover:bg-black/10 dark:hover:bg-white/5 transition-all duration-150 rounded-xl my-0.5"
+      className={`relative group flex items-start px-4 hover:bg-[#2e3035] transition-colors ${
+        isConsecutive ? "py-0.5 mt-0" : "py-1.5 mt-3"
+      }`}
     >
-      {/* Sender Avatar */}
-      <Avatar
-        src={sender.avatar}
-        name={sender.username}
-        size="md"
-        className="mt-0.5 cursor-pointer transform group-hover:scale-105 transition"
-        onClick={() => onUserClick && onUserClick(sender)}
-      />
+      {/* Reply Quote Banner */}
+      {!isConsecutive && message.replyTo && (
+        <div className="absolute -top-3.5 left-14 flex items-center gap-1.5 text-xs text-[#949ba4] select-none">
+          <CornerDownRight size={12} className="text-[#80848e]" />
+          <span className="font-semibold text-[#5865f2]">
+            @{message.replyTo.senderId?.username || "user"}
+          </span>
+          <span className="truncate italic text-[#949ba4] max-w-xs">
+            {message.replyTo.messageContent}
+          </span>
+        </div>
+      )}
+
+      {/* Left Column: Avatar or Hover Timestamp */}
+      <div className="w-10 flex-shrink-0 mr-4 flex items-start justify-center">
+        {isConsecutive ? (
+          <span className="text-[10px] text-[#949ba4] opacity-0 group-hover:opacity-100 select-none pt-0.5">
+            {formatGutterTime(message.createdAt || message.timestamp)}
+          </span>
+        ) : (
+          <Avatar
+            src={sender.avatar}
+            name={sender.username}
+            size="md"
+            className="cursor-pointer"
+            onClick={() => onUserClick && onUserClick(sender)}
+          />
+        )}
+      </div>
 
       {/* Message Body */}
       <div className="flex-1 min-w-0">
-        {/* Reply Quote Banner */}
-        {message.replyTo && (
-          <div className="flex items-center gap-1.5 text-xs mb-1 opacity-75" style={{ color: "var(--text-muted)" }}>
-            <CornerDownRight size={12} className="text-indigo-400" />
-            <span className="font-semibold text-indigo-400">
-              @{message.replyTo.senderId?.username || "user"}
+        {!isConsecutive && (
+          <div className="flex items-baseline gap-2 mb-0.5">
+            <span
+              onClick={() => onUserClick && onUserClick(sender)}
+              className="font-medium text-sm text-[#f2f3f5] hover:underline cursor-pointer"
+            >
+              {sender.username}
             </span>
-            <span className="truncate italic max-w-xs">
-              {message.replyTo.messageContent}
+            <span className="text-[11px] text-[#949ba4]">
+              {formatFullTimestamp(message.createdAt || message.timestamp)}
             </span>
+            {message.isEdited && (
+              <span className="text-[10px] text-[#949ba4]">(edited)</span>
+            )}
           </div>
         )}
 
-        {/* Sender Name & Timestamp */}
-        <div className="flex items-baseline gap-2">
-          <span
-            onClick={() => onUserClick && onUserClick(sender)}
-            className="font-bold text-sm hover:underline cursor-pointer tracking-tight"
-            style={{ color: "var(--text-primary)" }}
-          >
-            {sender.username}
-          </span>
-          <span className="text-[11px]" style={{ color: "var(--text-muted)" }}>
-            {formatTimestamp(message.createdAt || message.timestamp)}
-          </span>
-          {message.isEdited && (
-            <span className="text-[10px]" style={{ color: "var(--text-muted)" }}>(edited)</span>
-          )}
-        </div>
-
-        {/* Text or Inline Edit */}
+        {/* Text / Inline Edit */}
         {isEditing ? (
-          <div className="mt-1.5 space-y-2">
+          <div className="mt-1 space-y-1">
             <input
               type="text"
               value={editText}
@@ -159,47 +171,41 @@ export default function MessageItem({
                 if (e.key === "Enter") handleSaveEdit();
                 if (e.key === "Escape") setIsEditing(false);
               }}
-              className="w-full px-3.5 py-2 rounded-xl text-sm outline-none border focus:ring-2 focus:ring-indigo-500"
-              style={{
-                backgroundColor: "var(--bg-input)",
-                borderColor: "var(--border-subtle)",
-                color: "var(--text-primary)",
-              }}
+              className="w-full px-3 py-1.5 rounded bg-[#383a40] text-[#dbdee1] text-sm outline-none border border-[#1f2023] focus:border-[#5865f2]"
               autoFocus
             />
-            <div className="text-[11px] flex items-center gap-2" style={{ color: "var(--text-muted)" }}>
-              <span>escape to <button onClick={() => setIsEditing(false)} className="text-indigo-400 hover:underline">cancel</button></span>
+            <div className="text-[11px] text-[#949ba4] flex items-center gap-1.5">
+              <span>escape to <button onClick={() => setIsEditing(false)} className="text-[#5865f2] hover:underline">cancel</button></span>
               <span>•</span>
-              <span>enter to <button onClick={handleSaveEdit} className="text-indigo-400 hover:underline">save</button></span>
+              <span>enter to <button onClick={handleSaveEdit} className="text-[#5865f2] hover:underline">save</button></span>
             </div>
           </div>
         ) : (
-          <div
-            className="text-sm mt-0.5 leading-relaxed font-normal"
-            style={{ color: "var(--text-primary)" }}
-          >
+          <div className="text-sm text-[#dbdee1] leading-[1.375rem] break-words">
             {renderFormattedContent(messageText)}
+            {isConsecutive && message.isEdited && (
+              <span className="text-[10px] text-[#949ba4] ml-1">(edited)</span>
+            )}
           </div>
         )}
 
         {/* Attachments */}
         {message.attachments && message.attachments.length > 0 && (
-          <div className="mt-2.5 flex flex-wrap gap-2">
+          <div className="mt-2 flex flex-wrap gap-2">
             {message.attachments.map((att, idx) => (
               <img
                 key={idx}
                 src={att.url}
                 alt={att.fileName || "attachment"}
-                className="max-h-64 rounded-xl object-contain border shadow-sm"
-                style={{ borderColor: "var(--border-subtle)" }}
+                className="max-h-72 rounded object-contain border border-[#1f2023]"
               />
             ))}
           </div>
         )}
 
-        {/* Reactions Pills */}
+        {/* Reaction Pills */}
         {reactions.length > 0 && (
-          <div className="flex flex-wrap gap-1.5 mt-2">
+          <div className="flex flex-wrap gap-1 mt-1.5">
             {reactions.map((r, idx) => {
               const hasReacted = r.users?.some(
                 (uid) => (uid._id || uid).toString() === user?._id?.toString()
@@ -208,16 +214,11 @@ export default function MessageItem({
                 <button
                   key={idx}
                   onClick={() => onReact(message._id, r.emoji)}
-                  className={`flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-semibold border transition transform hover:scale-105 cursor-pointer shadow-xs ${
+                  className={`flex items-center gap-1.5 h-6 px-2 rounded text-xs font-semibold border transition cursor-pointer ${
                     hasReacted
-                      ? "bg-indigo-500/20 border-indigo-500 text-indigo-300"
-                      : "border-transparent hover:border-gray-500"
+                      ? "bg-[#5865f2]/20 border-[#5865f2] text-[#c9cdfb]"
+                      : "bg-[#2b2d31] border-[#3f4147] text-[#b5bac1] hover:bg-[#35373c] hover:border-[#4e5058]"
                   }`}
-                  style={{
-                    backgroundColor: hasReacted ? undefined : "var(--bg-card)",
-                    borderColor: hasReacted ? undefined : "var(--border-subtle)",
-                    color: hasReacted ? undefined : "var(--text-secondary)",
-                  }}
                 >
                   <span>{r.emoji}</span>
                   <span>{r.users?.length || 1}</span>
@@ -229,32 +230,20 @@ export default function MessageItem({
       </div>
 
       {/* Floating Action Toolbar on Hover */}
-      <div
-        className="absolute top-1 right-4 hidden group-hover:flex items-center border rounded-xl shadow-xl overflow-visible z-20 backdrop-blur-md"
-        style={{
-          backgroundColor: "var(--bg-popover)",
-          borderColor: "var(--border-subtle)",
-        }}
-      >
-        {/* Reaction Emoji Picker */}
+      <div className="absolute -top-3.5 right-4 hidden group-hover:flex items-center bg-[#313338] border border-[#232428] rounded shadow-md z-20">
+        {/* Emoji Button */}
         <div className="relative" ref={emojiButtonRef}>
           <button
             type="button"
             onClick={() => setShowEmojiPicker(!showEmojiPicker)}
-            className="p-2 text-gray-400 hover:text-amber-400 hover:bg-white/10 rounded-l-xl transition cursor-pointer"
+            className="p-1.5 text-[#b5bac1] hover:text-[#f2f3f5] hover:bg-[#35373c] rounded-l transition cursor-pointer"
             title="Add Reaction"
           >
             <Smile size={16} />
           </button>
 
           {showEmojiPicker && (
-            <div
-              className="absolute right-0 bottom-10 z-50 p-2 flex gap-1 rounded-xl shadow-2xl border backdrop-blur-md animate-in zoom-in-95 duration-100"
-              style={{
-                backgroundColor: "var(--bg-popover)",
-                borderColor: "var(--border-subtle)",
-              }}
-            >
+            <div className="absolute right-0 bottom-8 z-30 bg-[#2b2d31] border border-[#1f2023] rounded p-1 flex gap-1 shadow-lg">
               {quickEmojis.map((emoji) => (
                 <button
                   key={emoji}
@@ -263,7 +252,7 @@ export default function MessageItem({
                     onReact(message._id, emoji);
                     setShowEmojiPicker(false);
                   }}
-                  className="p-1.5 hover:bg-white/10 rounded-lg text-lg transition transform hover:scale-125 cursor-pointer select-none"
+                  className="p-1 hover:bg-[#35373c] rounded text-base transition cursor-pointer"
                 >
                   {emoji}
                 </button>
@@ -272,31 +261,31 @@ export default function MessageItem({
           )}
         </div>
 
-        {/* Reply Button */}
+        {/* Reply */}
         <button
           onClick={() => onReply(message)}
-          className="p-2 text-gray-400 hover:text-indigo-400 hover:bg-white/10 transition cursor-pointer"
+          className="p-1.5 text-[#b5bac1] hover:text-[#f2f3f5] hover:bg-[#35373c] transition cursor-pointer"
           title="Reply"
         >
           <Reply size={16} />
         </button>
 
-        {/* Edit Button */}
+        {/* Edit */}
         {isAuthor && (
           <button
             onClick={() => setIsEditing(true)}
-            className="p-2 text-gray-400 hover:text-indigo-400 hover:bg-white/10 transition cursor-pointer"
+            className="p-1.5 text-[#b5bac1] hover:text-[#f2f3f5] hover:bg-[#35373c] transition cursor-pointer"
             title="Edit Message"
           >
             <Edit2 size={16} />
           </button>
         )}
 
-        {/* Delete Button */}
+        {/* Delete */}
         {(isAuthor || canDelete) && (
           <button
             onClick={() => onDelete(message._id)}
-            className="p-2 text-gray-400 hover:text-rose-400 hover:bg-rose-500/10 rounded-r-xl transition cursor-pointer"
+            className="p-1.5 text-[#b5bac1] hover:text-[#f23f43] hover:bg-[#35373c] rounded-r transition cursor-pointer"
             title="Delete Message"
           >
             <Trash2 size={16} />
